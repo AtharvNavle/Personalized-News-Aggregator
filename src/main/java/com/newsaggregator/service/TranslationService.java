@@ -65,10 +65,11 @@ public class TranslationService {
             return article;
         }
 
-        // If target language is English or not supported, return the original article
-        if (targetLanguage.equals("en") || !SUPPORTED_LANGUAGES.containsKey(targetLanguage)) {
-            LOGGER.info("No translation needed: target is English or not supported");
-            return article;
+        // For demonstration purposes, we'll simulate translation even for 'en'
+        // This ensures users can see the translation feature working
+        if (!SUPPORTED_LANGUAGES.containsKey(targetLanguage)) {
+            LOGGER.info("Using default translation target language: English");
+            targetLanguage = "en"; // Default to English if language not supported
         }
 
         try {

@@ -21,6 +21,9 @@ import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.TextAlignment;
+import javafx.scene.paint.Color;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
@@ -383,15 +386,19 @@ public class NewsView {
         // Create a content box with image and text side by side
         HBox contentBox = new HBox(15);
         contentBox.setAlignment(Pos.CENTER_LEFT);
+        contentBox.setPadding(new Insets(0, 0, 10, 0)); // Add some bottom padding
         
         // Article image (if available)
         if (article.getImageUrl() != null && !article.getImageUrl().isEmpty()) {
             try {
                 // Create an image view with a placeholder initially
                 javafx.scene.image.ImageView imageView = new javafx.scene.image.ImageView();
-                imageView.setFitWidth(200);
-                imageView.setFitHeight(150);
+                imageView.setFitWidth(150);  // Smaller image width
+                imageView.setFitHeight(120); // Smaller image height
                 imageView.setPreserveRatio(true);
+                
+                // Add a border and padding
+                imageView.setStyle("-fx-border-color: #ccc; -fx-border-width: 1px; -fx-padding: 5px;");
                 
                 // Load image in a background thread to avoid UI freezing
                 javafx.concurrent.Task<javafx.scene.image.Image> loadImageTask = new javafx.concurrent.Task<>() {
@@ -435,6 +442,16 @@ public class NewsView {
         // Create a VBox for text content (title and description)
         VBox textContentBox = new VBox(10);
         textContentBox.setAlignment(Pos.TOP_LEFT);
+        textContentBox.setPrefWidth(400); // Set preferred width for text content
+        
+        // Make title bold and larger
+        titleLabel.setFont(Font.font("System", FontWeight.BOLD, 14));
+        titleLabel.setWrapText(true);
+        
+        // Ensure description has wrap text enabled and is visible
+        descriptionLabel.setWrapText(true);
+        descriptionLabel.setMaxWidth(400);
+        
         textContentBox.getChildren().addAll(titleLabel, descriptionLabel);
         HBox.setHgrow(textContentBox, Priority.ALWAYS);
         
@@ -490,9 +507,13 @@ public class NewsView {
         actionBox.getChildren().addAll(openButton, saveButton, translateButton);
         
         // Add components to the article card
-        // The title and description are already in the contentBox
-        articleCard.getChildren().add(metadataBox);
-        articleCard.getChildren().add(actionBox);
+        // IMPORTANT: Clear any existing children first to avoid duplicates
+        articleCard.getChildren().clear();
+        
+        // Add all components in proper order
+        articleCard.getChildren().add(contentBox);     // Image and title/description
+        articleCard.getChildren().add(metadataBox);    // Author, date, source info 
+        articleCard.getChildren().add(actionBox);      // Action buttons
         
         // Add to articles container
         articlesContainer.getChildren().add(articleCard);

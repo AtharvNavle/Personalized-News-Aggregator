@@ -35,6 +35,15 @@ public class UserService {
         User user = databaseService.authenticateUser(username, password);
         if (user != null) {
             currentUser = user;
+            
+            // Ensure user has a preferred language set (for translation feature)
+            if (currentUser.getPreferredLanguage() == null || currentUser.getPreferredLanguage().isEmpty()) {
+                // Set a default language (fr = French) for translation demo
+                currentUser.setPreferredLanguage("fr");
+                databaseService.updateUser(currentUser);
+                LOGGER.info("Set default preferred language for user: " + username);
+            }
+            
             LOGGER.info("User logged in: " + username);
             return true;
         }
