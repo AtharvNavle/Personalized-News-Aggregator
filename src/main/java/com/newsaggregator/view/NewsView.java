@@ -51,6 +51,7 @@ public class NewsView {
     private ProgressIndicator loadingIndicator;
     
     private final Map<String, Button> saveButtonsMap = new HashMap<>();
+    private final Map<String, Button> translateButtonsMap = new HashMap<>();
     private final UserService userService;
 
     /**
@@ -360,9 +361,11 @@ public class NewsView {
      * @param article         the article to add
      * @param onOpenAction    the action to perform when opening the article
      * @param onSaveAction    the action to perform when saving/unsaving the article
+     * @param onTranslateAction the action to perform when translating the article
      */
     public void addArticleToUI(Article article, EventHandler<ActionEvent> onOpenAction, 
-                               EventHandler<ActionEvent> onSaveAction) {
+                               EventHandler<ActionEvent> onSaveAction,
+                               EventHandler<ActionEvent> onTranslateAction) {
         // Article card container
         VBox articleCard = new VBox(10);
         articleCard.setPadding(new Insets(15));
@@ -411,7 +414,16 @@ public class NewsView {
         // Store save button reference for updating later
         saveButtonsMap.put(article.getId(), saveButton);
         
-        actionBox.getChildren().addAll(openButton, saveButton);
+        // Add translate button
+        Button translateButton = new Button(article.isTranslated() ? "Show Original" : "Translate");
+        translateButton.getStyleClass().add("action-button");
+        translateButton.setId("translate-" + article.getId());
+        translateButton.setOnAction(onTranslateAction);
+        
+        // Store translate button reference for updating later
+        translateButtonsMap.put(article.getId(), translateButton);
+        
+        actionBox.getChildren().addAll(openButton, saveButton, translateButton);
         
         // Add all components to the article card
         articleCard.getChildren().addAll(titleLabel, descriptionLabel, metadataBox, actionBox);
@@ -430,6 +442,27 @@ public class NewsView {
         if (saveButton != null) {
             saveButton.setText(article.isSaved() ? "Unsave Article" : "Save Article");
         }
+    }
+    
+    /**
+     * Updates the translate button text for an article.
+     *
+     * @param article the article whose translate button to update
+     */
+    public void updateArticleTranslateButton(Article article) {
+        Button translateButton = translateButtonsMap.get(article.getId());
+        if (translateButton != null) {
+            translateButton.setText(article.isTranslated() ? "Show Original" : "Translate");
+        }
+    }
+    
+    /**
+     * Gets the map of translate buttons.
+     *
+     * @return the map of translate buttons
+     */
+    public Map<String, Button> getTranslateButtonsMap() {
+        return translateButtonsMap;
     }
 }
 

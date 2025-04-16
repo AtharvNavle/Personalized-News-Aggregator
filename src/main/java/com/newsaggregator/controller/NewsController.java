@@ -33,8 +33,10 @@ import java.awt.Desktop;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -58,6 +60,7 @@ public class NewsController {
     private int currentPage = 1;
     private final int articlesPerPage = 20;
     private boolean isLoading = false;
+    private final Map<String, Article> originalArticles = new HashMap<>(); // Store original articles for reverting translations
 
     /**
      * Constructor for NewsController.
@@ -207,7 +210,8 @@ public class NewsController {
             for (Article article : articles) {
                 // Add article to the UI
                 newsView.addArticleToUI(article, event -> openArticle(article), 
-                        event -> toggleSaveArticle(article));
+                        event -> toggleSaveArticle(article),
+                        event -> translateArticle(article));
             }
         }
         
@@ -396,6 +400,61 @@ public class NewsController {
     }
 
     /**
+     * Translates an article to the user's preferred language or reverts to original.
+     *
+     * @param article the article to translate
+     */
+    private void translateArticle(Article article) {
+        User currentUser = userService.getCurrentUser();
+        if (currentUser == null) {
+            showAlert(AlertType.WARNING, "Not Logged In", "You must be logged in to translate articles");
+            return;
+        }
+        
+        if (!article.isTranslated()) {
+            // Save original article for later reverting
+            originalArticles.put(article.getId(), article);
+            
+            // Get user's preferred language or use a default
+            String targetLanguage = currentUser.getPreferredLanguage();
+            
+            // Translate the article
+            try {
+                Article translatedArticle = newsService.translateArticle(article, targetLanguage);
+                
+                // Update UI to reflect translation state
+                if (translatedArticle.isTranslated()) {
+                    newsView.updateArticleTranslateButton(translatedArticle);
+                    showAlert(AlertType.INFORMATION, "Article Translated", 
+                            "Article has been translated to " + translatedArticle.getTranslatedLanguage());
+                } else {
+                    showAlert(AlertType.WARNING, "Translation Failed", 
+                            "Could not translate the article. Please try again later.");
+                }
+            } catch (Exception e) {
+                LOGGER.log(Level.SEVERE, "Failed to translate article", e);
+                showAlert(AlertType.ERROR, "Translation Error", 
+                        "An error occurred while translating the article: " + e.getMessage());
+            }
+        } else {
+            // Revert to original article
+            Article originalArticle = originalArticles.get(article.getId());
+            if (originalArticle != null) {
+                article.setTranslated(false);
+                article.setTranslatedLanguage(null);
+                article.setTitle(originalArticle.getTitle());
+                article.setDescription(originalArticle.getDescription());
+                article.setContent(originalArticle.getContent());
+                
+                // Update UI
+                newsView.updateArticleTranslateButton(article);
+                showAlert(AlertType.INFORMATION, "Original Article", 
+                        "Showing original article content");
+            }
+        }
+    }
+    
+    /**
      * Shows the user's saved articles.
      */
     private void showSavedArticles() {
@@ -418,7 +477,8 @@ public class NewsController {
         // Display the saved articles
         for (Article article : savedArticles) {
             newsView.addArticleToUI(article, event -> openArticle(article), 
-                    event -> toggleSaveArticle(article));
+                    event -> toggleSaveArticle(article),
+                    event -> translateArticle(article));
         }
         
         // Update UI to show we're in saved articles mode

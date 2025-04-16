@@ -1,7 +1,7 @@
 com/newsaggregator/model/Article.class
 com/newsaggregator/model/Category.class
-com/newsaggregator/service/DatabaseService.class
 com/newsaggregator/service/TranslationService.class
+com/newsaggregator/service/DatabaseService.class
 com/newsaggregator/Main.class
 com/newsaggregator/controller/LoginController.class
 com/newsaggregator/view/NewsView.class
