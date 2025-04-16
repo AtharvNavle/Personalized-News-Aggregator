@@ -380,6 +380,53 @@ public class NewsView {
         Label descriptionLabel = new Label(article.getDescription());
         descriptionLabel.setWrapText(true);
         
+        // Article image (if available)
+        if (article.getImageUrl() != null && !article.getImageUrl().isEmpty()) {
+            try {
+                // Create an image view with a placeholder initially
+                javafx.scene.image.ImageView imageView = new javafx.scene.image.ImageView();
+                imageView.setFitWidth(200);
+                imageView.setPreserveRatio(true);
+                
+                // Load image in a background thread to avoid UI freezing
+                javafx.concurrent.Task<javafx.scene.image.Image> loadImageTask = new javafx.concurrent.Task<>() {
+                    @Override
+                    protected javafx.scene.image.Image call() throws Exception {
+                        try {
+                            return new javafx.scene.image.Image(article.getImageUrl(), true);
+                        } catch (Exception e) {
+                            System.err.println("Failed to load image: " + article.getImageUrl());
+                            return null;
+                        }
+                    }
+                };
+                
+                loadImageTask.setOnSucceeded(event -> {
+                    javafx.scene.image.Image image = loadImageTask.getValue();
+                    if (image != null && !image.isError()) {
+                        imageView.setImage(image);
+                    } else {
+                        // Hide the image view if loading fails
+                        imageView.setVisible(false);
+                    }
+                });
+                
+                loadImageTask.setOnFailed(event -> {
+                    imageView.setVisible(false);
+                });
+                
+                // Start loading the image
+                Thread imageThread = new Thread(loadImageTask);
+                imageThread.setDaemon(true);
+                imageThread.start();
+                
+                // Add image to the article card after title and description
+                articleCard.getChildren().add(imageView);
+            } catch (Exception e) {
+                System.err.println("Error setting up image loading: " + e.getMessage());
+            }
+        }
+        
         // Article metadata
         HBox metadataBox = new HBox(15);
         metadataBox.setAlignment(Pos.CENTER_LEFT);
@@ -425,8 +472,11 @@ public class NewsView {
         
         actionBox.getChildren().addAll(openButton, saveButton, translateButton);
         
-        // Add all components to the article card
-        articleCard.getChildren().addAll(titleLabel, descriptionLabel, metadataBox, actionBox);
+        // Add components to the article card (image is added earlier if available)
+        articleCard.getChildren().add(0, titleLabel); // Title at the top
+        articleCard.getChildren().add(descriptionLabel);
+        articleCard.getChildren().add(metadataBox);
+        articleCard.getChildren().add(actionBox);
         
         // Add to articles container
         articlesContainer.getChildren().add(articleCard);

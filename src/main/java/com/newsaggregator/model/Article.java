@@ -29,6 +29,28 @@ public class Article {
     }
     
     /**
+     * Copy constructor for creating a new article based on an existing one.
+     *
+     * @param original the original article to copy
+     */
+    public Article(Article original) {
+        this.id = original.id;
+        this.title = original.title;
+        this.description = original.description;
+        this.content = original.content;
+        this.author = original.author;
+        this.url = original.url;
+        this.imageUrl = original.imageUrl;
+        this.publishedAt = original.publishedAt;
+        this.source = original.source;
+        this.category = original.category;
+        this.saved = original.saved;
+        this.userId = original.userId;
+        this.translated = false;
+        this.translatedLanguage = null;
+    }
+    
+    /**
      * Constructor for creating a translated copy of an article.
      *
      * @param id                The unique identifier of the article
