@@ -19,11 +19,45 @@ public class Article {
     private Category category;
     private boolean saved;
     private int userId;
+    private boolean translated;
+    private String translatedLanguage;
 
     /**
      * Default constructor.
      */
     public Article() {
+    }
+    
+    /**
+     * Constructor for creating a translated copy of an article.
+     *
+     * @param id                The unique identifier of the article
+     * @param source            The source of the article
+     * @param author            The author of the article
+     * @param title             The title of the article
+     * @param description       The description of the article
+     * @param url               The URL to the full article
+     * @param imageUrl          The URL to the article's image
+     * @param content           The content of the article
+     * @param publishedAt       The date and time when the article was published
+     * @param category          The category of the article
+     */
+    public Article(String id, String source, String author, String title, String description,
+                   String url, String imageUrl, String content, LocalDateTime publishedAt, 
+                   Category category) {
+        this.id = id;
+        this.source = source;
+        this.author = author;
+        this.title = title;
+        this.description = description;
+        this.url = url;
+        this.imageUrl = imageUrl;
+        this.content = content;
+        this.publishedAt = publishedAt;
+        this.category = category;
+        this.saved = false;
+        this.translated = false;
+        this.translatedLanguage = null;
     }
 
     /**
@@ -53,6 +87,8 @@ public class Article {
         this.source = source;
         this.category = category;
         this.saved = false;
+        this.translated = false;
+        this.translatedLanguage = null;
     }
 
     public String getId() {
@@ -149,6 +185,22 @@ public class Article {
     
     public void setUserId(int userId) {
         this.userId = userId;
+    }
+    
+    public boolean isTranslated() {
+        return translated;
+    }
+    
+    public void setTranslated(boolean translated) {
+        this.translated = translated;
+    }
+    
+    public String getTranslatedLanguage() {
+        return translatedLanguage;
+    }
+    
+    public void setTranslatedLanguage(String translatedLanguage) {
+        this.translatedLanguage = translatedLanguage;
     }
 
     @Override

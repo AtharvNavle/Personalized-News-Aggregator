@@ -188,6 +188,56 @@ public class UserService {
         
         return saved;
     }
+    
+    /**
+     * Updates a user's information.
+     *
+     * @param user the user to update
+     * @return true if the update is successful, false otherwise
+     */
+    public boolean updateUser(User user) {
+        if (user == null) {
+            LOGGER.warning("Cannot update user: User is null");
+            return false;
+        }
+        
+        boolean updated = databaseService.updateUser(user);
+        if (updated) {
+            LOGGER.info("User updated: " + user.getUsername());
+            
+            // If updating the current user, refresh the current user reference
+            if (currentUser != null && currentUser.getId() == user.getId()) {
+                currentUser = user;
+            }
+        } else {
+            LOGGER.warning("Failed to update user: " + user.getUsername());
+        }
+        
+        return updated;
+    }
+    
+    /**
+     * Saves an article for a specified user.
+     *
+     * @param user the user
+     * @param article the article to save
+     * @return true if the article is saved successfully, false otherwise
+     */
+    public boolean saveArticle(User user, Article article) {
+        if (user == null) {
+            LOGGER.warning("Cannot save article: User is null");
+            return false;
+        }
+        
+        boolean saved = databaseService.saveArticle(user, article);
+        if (saved) {
+            LOGGER.info("Article saved for user: " + user.getUsername());
+        } else {
+            LOGGER.warning("Failed to save article for user: " + user.getUsername());
+        }
+        
+        return saved;
+    }
 
     /**
      * Removes a saved article for the current user.
@@ -210,6 +260,29 @@ public class UserService {
         
         return removed;
     }
+    
+    /**
+     * Removes a saved article for a specified user.
+     *
+     * @param user the user
+     * @param article the article to remove
+     * @return true if the article is removed successfully, false otherwise
+     */
+    public boolean unsaveArticle(User user, Article article) {
+        if (user == null) {
+            LOGGER.warning("Cannot remove article: User is null");
+            return false;
+        }
+        
+        boolean removed = databaseService.removeSavedArticle(user, article.getId());
+        if (removed) {
+            LOGGER.info("Article removed for user: " + user.getUsername());
+        } else {
+            LOGGER.warning("Failed to remove article for user: " + user.getUsername());
+        }
+        
+        return removed;
+    }
 
     /**
      * Gets all saved articles for the current user.
@@ -223,6 +296,21 @@ public class UserService {
         }
         
         return currentUser.getSavedArticles();
+    }
+    
+    /**
+     * Gets all saved articles for a specified user.
+     * 
+     * @param user the user whose saved articles to retrieve
+     * @return a list of saved articles
+     */
+    public List<Article> getSavedArticles(User user) {
+        if (user == null) {
+            LOGGER.warning("Cannot get saved articles: User is null");
+            return List.of();
+        }
+        
+        return user.getSavedArticles();
     }
 
     /**
@@ -305,5 +393,15 @@ public class UserService {
         }
         
         return updated;
+    }
+    
+    /**
+     * Checks if a username already exists.
+     *
+     * @param username the username to check
+     * @return true if the username exists, false otherwise
+     */
+    public boolean usernameExists(String username) {
+        return databaseService.usernameExists(username);
     }
 }

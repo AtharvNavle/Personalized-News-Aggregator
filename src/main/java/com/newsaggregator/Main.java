@@ -22,21 +22,35 @@ public class Main extends Application {
      */
     @Override
     public void start(Stage stage) {
-        primaryStage = stage;
-        primaryStage.setTitle("News Aggregator");
-        
-        // Initialize database connection
-        DatabaseService.getInstance().initializeDatabase();
-        
-        // Set up login view as the first screen
-        LoginView loginView = new LoginView();
-        Scene scene = new Scene(loginView.getRoot(), WIDTH, HEIGHT);
-        scene.getStylesheets().add(getClass().getResource("/com/newsaggregator/css/styles.css").toExternalForm());
-        
-        primaryStage.setScene(scene);
-        primaryStage.setMinWidth(800);
-        primaryStage.setMinHeight(600);
-        primaryStage.show();
+        try {
+            System.out.println("Starting News Aggregator application...");
+            primaryStage = stage;
+            primaryStage.setTitle("News Aggregator");
+            
+            // Initialize database connection
+            System.out.println("Initializing database...");
+            DatabaseService.getInstance().initializeDatabase();
+            System.out.println("Database initialized successfully");
+            
+            // Set up login view as the first screen
+            System.out.println("Setting up login view...");
+            LoginView loginView = new LoginView();
+            new com.newsaggregator.controller.LoginController(loginView);
+            
+            Scene scene = new Scene(loginView.getRoot(), WIDTH, HEIGHT);
+            String cssPath = "/com/newsaggregator/css/styles.css";
+            System.out.println("Loading CSS from: " + cssPath);
+            scene.getStylesheets().add(getClass().getResource(cssPath).toExternalForm());
+            
+            primaryStage.setScene(scene);
+            primaryStage.setMinWidth(800);
+            primaryStage.setMinHeight(600);
+            primaryStage.show();
+            System.out.println("Application UI initialized and displayed");
+        } catch (Exception e) {
+            System.err.println("Error starting application: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
     
     /**

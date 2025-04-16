@@ -49,24 +49,36 @@ public class LoginController {
      * Handles the login button click event.
      */
     private void handleLogin() {
-        String username = loginView.getUsernameField().getText().trim();
-        String password = loginView.getPasswordField().getText();
-        
-        // Validate input
-        if (username.isEmpty() || password.isEmpty()) {
-            showAlert(AlertType.ERROR, "Login Error", "Username and password are required");
-            return;
-        }
-        
-        // Attempt to login
-        boolean success = userService.login(username, password);
-        
-        if (success) {
-            // Navigate to the main news view
-            navigateToNewsView();
-        } else {
-            showAlert(AlertType.ERROR, "Login Failed", "Invalid username or password");
-            loginView.getPasswordField().clear();
+        try {
+            System.out.println("Login button clicked");
+            String username = loginView.getUsernameField().getText().trim();
+            String password = loginView.getPasswordField().getText();
+            
+            System.out.println("Login attempt with username: " + username);
+            
+            // Validate input
+            if (username.isEmpty() || password.isEmpty()) {
+                System.out.println("Login validation failed: Empty username or password");
+                showAlert(AlertType.ERROR, "Login Error", "Username and password are required");
+                return;
+            }
+            
+            // Attempt to login
+            boolean success = userService.login(username, password);
+            
+            if (success) {
+                System.out.println("Login successful for user: " + username);
+                // Navigate to the main news view
+                navigateToNewsView();
+            } else {
+                System.out.println("Login failed: Invalid credentials for username: " + username);
+                showAlert(AlertType.ERROR, "Login Failed", "Invalid username or password");
+                loginView.getPasswordField().clear();
+            }
+        } catch (Exception e) {
+            System.err.println("Error during login: " + e.getMessage());
+            e.printStackTrace();
+            showAlert(AlertType.ERROR, "Login Error", "An unexpected error occurred: " + e.getMessage());
         }
     }
 

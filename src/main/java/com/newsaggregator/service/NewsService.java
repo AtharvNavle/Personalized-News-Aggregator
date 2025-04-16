@@ -22,6 +22,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -37,6 +38,7 @@ public class NewsService {
     private final ObjectMapper objectMapper;
     private final CloseableHttpClient httpClient;
     private final NewsCache newsCache;
+    private final TranslationService translationService;
 
     /**
      * Constructor for NewsService.
@@ -45,6 +47,7 @@ public class NewsService {
         this.objectMapper = new ObjectMapper();
         this.httpClient = HttpClients.createDefault();
         this.newsCache = NewsCache.getInstance();
+        this.translationService = new TranslationService();
     }
 
     /**
@@ -314,6 +317,45 @@ public class NewsService {
         article.setSaved(false);
         
         return article;
+    }
+
+    /**
+     * Translates an article to the specified language.
+     *
+     * @param article        the article to translate
+     * @param targetLanguage the target language code
+     * @return the translated article
+     */
+    public Article translateArticle(Article article, String targetLanguage) {
+        if (article == null || targetLanguage == null || targetLanguage.isEmpty()) {
+            LOGGER.warning("Cannot translate: article or target language is null/empty");
+            return article;
+        }
+        
+        // If article is already translated to the requested language, return it
+        if (article.isTranslated() && targetLanguage.equals(article.getTranslatedLanguage())) {
+            LOGGER.info("Article already translated to: " + targetLanguage);
+            return article;
+        }
+        
+        // Use the translation service to translate the article
+        try {
+            Article translatedArticle = translationService.translateArticle(article, targetLanguage);
+            LOGGER.info("Article translated successfully to: " + targetLanguage);
+            return translatedArticle;
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Failed to translate article", e);
+            return article;  // Return original article if translation fails
+        }
+    }
+    
+    /**
+     * Gets a map of supported languages for translation.
+     *
+     * @return map of language codes to language names
+     */
+    public Map<String, String> getSupportedLanguages() {
+        return TranslationService.getSupportedLanguages();
     }
 
     /**

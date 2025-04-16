@@ -17,8 +17,9 @@ import java.util.logging.Logger;
  */
 public class DatabaseService {
     private static final Logger LOGGER = Logger.getLogger(DatabaseService.class.getName());
-    private static final String DB_URL = "jdbc:mysql://localhost:3306/news_aggregator?useSSL=false&serverTimezone=UTC";
-    private static final String DB_USER = "root";
+    // Using H2 in-memory database for easier setup
+    private static final String DB_URL = "jdbc:h2:mem:newsdb;DB_CLOSE_DELAY=-1";
+    private static final String DB_USER = "sa";
     private static final String DB_PASSWORD = "";
 
     private static DatabaseService instance;
@@ -29,11 +30,13 @@ public class DatabaseService {
      */
     private DatabaseService() {
         try {
-            // Load MySQL JDBC driver
-            Class.forName("com.mysql.cj.jdbc.Driver");
+            // Load H2 JDBC driver
+            Class.forName("org.h2.Driver");
+            System.out.println("H2 Database driver loaded successfully");
         } catch (ClassNotFoundException e) {
-            LOGGER.log(Level.SEVERE, "MySQL JDBC Driver not found", e);
-            throw new RuntimeException("MySQL JDBC Driver not found", e);
+            System.err.println("H2 Database driver not found: " + e.getMessage());
+            LOGGER.log(Level.SEVERE, "H2 Database driver not found", e);
+            throw new RuntimeException("H2 Database driver not found", e);
         }
     }
 
@@ -50,14 +53,39 @@ public class DatabaseService {
     }
 
     /**
+     * Gets a database connection.
+     *
+     * @return the Connection object
+     * @throws SQLException if a database error occurs
+     */
+    private Connection getConnection() throws SQLException {
+        try {
+            System.out.println("Attempting to connect to database at: " + DB_URL);
+            Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+            System.out.println("Database connection successful");
+            return conn;
+        } catch (SQLException e) {
+            System.err.println("Database connection failed: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
+    }
+    
+    /**
      * Initializes the database connection and creates tables if they don't exist.
      */
     public void initializeDatabase() {
         try {
-            connection = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+            System.out.println("Initializing database connection...");
+            connection = getConnection();
+            System.out.println("Creating tables if they don't exist...");
             createTablesIfNotExist();
+            System.out.println("Creating admin user if it doesn't exist...");
             createAdminUserIfNotExists();
+            System.out.println("Database initialization completed successfully");
         } catch (SQLException e) {
+            System.err.println("Failed to initialize database: " + e.getMessage());
+            e.printStackTrace();
             LOGGER.log(Level.SEVERE, "Failed to initialize database", e);
             throw new RuntimeException("Failed to initialize database", e);
         }
@@ -85,7 +113,7 @@ public class DatabaseService {
                     "user_id INT NOT NULL, " +
                     "category VARCHAR(50) NOT NULL, " +
                     "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE, " +
-                    "UNIQUE KEY unique_user_category (user_id, category))");
+                    "CONSTRAINT unique_user_category UNIQUE (user_id, category))");
 
             // Saved articles table
             stmt.execute("CREATE TABLE IF NOT EXISTS saved_articles (" +
@@ -103,7 +131,7 @@ public class DatabaseService {
                     "category VARCHAR(50), " +
                     "saved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
                     "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE, " +
-                    "UNIQUE KEY unique_user_article (user_id, article_id))");
+                    "CONSTRAINT unique_user_article UNIQUE (user_id, article_id))");
 
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Failed to create tables", e);

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<BorderPane fx:id="root" styleClass="register-view" stylesheets="@../css/styles.css" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.newsaggregator.controller.RegisterController">
+   <padding>
+      <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+   </padding>
+   <center>
+      <VBox alignment="CENTER" BorderPane.alignment="CENTER">
+         <VBox alignment="CENTER" maxWidth="450.0" styleClass="form-container">
+            <padding>
+               <Insets bottom="30.0" left="30.0" right="30.0" top="30.0" />
+            </padding>
+            <VBox alignment="CENTER" spacing="10.0">
+               <Label styleClass="app-logo" text="📝">
+                  <font>
+                     <Font name="System Bold" size="48.0" />
+                  </font>
+               </Label>
+               <Label styleClass="app-title" text="Create Account">
+                  <font>
+                     <Font name="System Bold" size="24.0" />
+                  </font>
+               </Label>
+               <Label styleClass="app-subtitle" text="Join News Aggregator to personalize your news">
+                  <font>
+                     <Font size="14.0" />
+                  </font>
+               </Label>
+            </VBox>
+            <GridPane alignment="CENTER" hgap="10.0" vgap="15.0">
+               <columnConstraints>
+                  <ColumnConstraints hgrow="SOMETIMES" maxWidth="150.0" minWidth="10.0" prefWidth="130.0" />
+                  <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="250.0" />
+               </columnConstraints>
+               <rowConstraints>
+                  <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                  <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                  <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                  <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                  <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+               </rowConstraints>
+               <Label text="Username:" />
+               <Label text="Email:" GridPane.rowIndex="1" />
+               <Label text="Password:" GridPane.rowIndex="2" />
+               <Label text="Confirm Password:" GridPane.rowIndex="3" />
+               <TextField fx:id="usernameField" promptText="Choose a username (min 4 characters)" GridPane.columnIndex="1" />
+               <TextField fx:id="emailField" promptText="Enter your email address" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+               <PasswordField fx:id="passwordField" promptText="Create a password (min 6 characters)" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+               <PasswordField fx:id="confirmPasswordField" promptText="Confirm your password" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+               <Label styleClass="help-text" text="Password must be at least 6 characters long" GridPane.columnIndex="1" GridPane.rowIndex="4">
+                  <font>
+                     <Font size="12.0" />
+                  </font>
+               </Label>
+            </GridPane>
+            <HBox alignment="CENTER" spacing="10.0">
+               <Button fx:id="registerButton" defaultButton="true" prefWidth="100.0" styleClass="primary-button" text="Register" />
+               <Button fx:id="backToLoginButton" prefWidth="100.0" styleClass="secondary-button" text="Back to Login" />
+            </HBox>
+         </VBox>
+      </VBox>
+   </center>
+   <bottom>
+      <HBox alignment="CENTER" BorderPane.alignment="CENTER">
+         <Label styleClass="footer-text" text="© 2023 News Aggregator | Powered by NewsAPI" />
+         <padding>
+            <Insets top="10.0" />
+         </padding>
+      </HBox>
+   </bottom>
+</BorderPane>

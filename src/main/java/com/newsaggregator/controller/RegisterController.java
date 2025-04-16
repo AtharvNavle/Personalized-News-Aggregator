@@ -56,45 +56,62 @@ public class RegisterController {
      * Handles the registration button click event.
      */
     private void handleRegistration() {
-        String username = registerView.getUsernameField().getText().trim();
-        String email = registerView.getEmailField().getText().trim();
-        String password = registerView.getPasswordField().getText();
-        String confirmPassword = registerView.getConfirmPasswordField().getText();
-        
-        // Validate input
-        if (username.isEmpty() || email.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
-            showAlert(AlertType.ERROR, "Registration Error", "All fields are required");
-            return;
-        }
-        
-        if (username.length() < 4) {
-            showAlert(AlertType.ERROR, "Registration Error", "Username must be at least 4 characters long");
-            return;
-        }
-        
-        if (!isValidEmail(email)) {
-            showAlert(AlertType.ERROR, "Registration Error", "Please enter a valid email address");
-            return;
-        }
-        
-        if (password.length() < 6) {
-            showAlert(AlertType.ERROR, "Registration Error", "Password must be at least 6 characters long");
-            return;
-        }
-        
-        if (!password.equals(confirmPassword)) {
-            showAlert(AlertType.ERROR, "Registration Error", "Passwords do not match");
-            return;
-        }
-        
-        // Attempt to register
-        boolean success = userService.register(username, email, password, false);
-        
-        if (success) {
-            // Navigate to the main news view
-            navigateToNewsView();
-        } else {
-            showAlert(AlertType.ERROR, "Registration Failed", "Username or email already exists");
+        try {
+            System.out.println("Register button clicked");
+            String username = registerView.getUsernameField().getText().trim();
+            String email = registerView.getEmailField().getText().trim();
+            String password = registerView.getPasswordField().getText();
+            String confirmPassword = registerView.getConfirmPasswordField().getText();
+            
+            System.out.println("Registration attempt with username: " + username + ", email: " + email);
+            
+            // Validate input
+            if (username.isEmpty() || email.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
+                System.out.println("Registration validation failed: Empty fields");
+                showAlert(AlertType.ERROR, "Registration Error", "All fields are required");
+                return;
+            }
+            
+            if (username.length() < 4) {
+                System.out.println("Registration validation failed: Username too short");
+                showAlert(AlertType.ERROR, "Registration Error", "Username must be at least 4 characters long");
+                return;
+            }
+            
+            if (!isValidEmail(email)) {
+                System.out.println("Registration validation failed: Invalid email format");
+                showAlert(AlertType.ERROR, "Registration Error", "Please enter a valid email address");
+                return;
+            }
+            
+            if (password.length() < 6) {
+                System.out.println("Registration validation failed: Password too short");
+                showAlert(AlertType.ERROR, "Registration Error", "Password must be at least 6 characters long");
+                return;
+            }
+            
+            if (!password.equals(confirmPassword)) {
+                System.out.println("Registration validation failed: Passwords don't match");
+                showAlert(AlertType.ERROR, "Registration Error", "Passwords do not match");
+                return;
+            }
+            
+            // Attempt to register
+            System.out.println("Attempting to register user: " + username);
+            boolean success = userService.register(username, email, password, false);
+            
+            if (success) {
+                System.out.println("Registration successful for user: " + username);
+                // Navigate to the main news view
+                navigateToNewsView();
+            } else {
+                System.out.println("Registration failed: Username or email already exists");
+                showAlert(AlertType.ERROR, "Registration Failed", "Username or email already exists");
+            }
+        } catch (Exception e) {
+            System.err.println("Error during registration: " + e.getMessage());
+            e.printStackTrace();
+            showAlert(AlertType.ERROR, "Registration Error", "An unexpected error occurred: " + e.getMessage());
         }
     }
 
