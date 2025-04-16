@@ -380,12 +380,17 @@ public class NewsView {
         Label descriptionLabel = new Label(article.getDescription());
         descriptionLabel.setWrapText(true);
         
+        // Create a content box with image and text side by side
+        HBox contentBox = new HBox(15);
+        contentBox.setAlignment(Pos.CENTER_LEFT);
+        
         // Article image (if available)
         if (article.getImageUrl() != null && !article.getImageUrl().isEmpty()) {
             try {
                 // Create an image view with a placeholder initially
                 javafx.scene.image.ImageView imageView = new javafx.scene.image.ImageView();
                 imageView.setFitWidth(200);
+                imageView.setFitHeight(150);
                 imageView.setPreserveRatio(true);
                 
                 // Load image in a background thread to avoid UI freezing
@@ -420,12 +425,24 @@ public class NewsView {
                 imageThread.setDaemon(true);
                 imageThread.start();
                 
-                // Add image to the article card after title and description
-                articleCard.getChildren().add(imageView);
+                // Add image to the content box
+                contentBox.getChildren().add(imageView);
             } catch (Exception e) {
                 System.err.println("Error setting up image loading: " + e.getMessage());
             }
         }
+        
+        // Create a VBox for text content (title and description)
+        VBox textContentBox = new VBox(10);
+        textContentBox.setAlignment(Pos.TOP_LEFT);
+        textContentBox.getChildren().addAll(titleLabel, descriptionLabel);
+        HBox.setHgrow(textContentBox, Priority.ALWAYS);
+        
+        // Add the text content to the content box
+        contentBox.getChildren().add(textContentBox);
+        
+        // Add the content box to the article card
+        articleCard.getChildren().add(contentBox);
         
         // Article metadata
         HBox metadataBox = new HBox(15);
@@ -472,9 +489,8 @@ public class NewsView {
         
         actionBox.getChildren().addAll(openButton, saveButton, translateButton);
         
-        // Add components to the article card (image is added earlier if available)
-        articleCard.getChildren().add(0, titleLabel); // Title at the top
-        articleCard.getChildren().add(descriptionLabel);
+        // Add components to the article card
+        // The title and description are already in the contentBox
         articleCard.getChildren().add(metadataBox);
         articleCard.getChildren().add(actionBox);
         

@@ -136,6 +136,17 @@ public class TranslationService {
             text = text.substring(0, maxLength);
         }
 
+        // SIMPLIFIED TRANSLATION FOR DEMO PURPOSES
+        // In a real implementation, you'd use an actual translation API
+        // This is just a demonstration version to show the functionality
+        
+        // Get language name for prefix
+        String languageName = SUPPORTED_LANGUAGES.getOrDefault(targetLanguage, targetLanguage);
+        
+        // Add a prefix indicating the language
+        return "[" + languageName + "] " + text;
+        
+        /* UNCOMMENT THIS TO USE THE ACTUAL API (requires registration)
         // Create JSON request body
         MediaType JSON = MediaType.get("application/json; charset=utf-8");
         String requestJson = objectMapper.writeValueAsString(Map.of(
@@ -171,6 +182,7 @@ public class TranslationService {
             LOGGER.log(Level.SEVERE, "Error during translation request", e);
             return text;  // Return original text if request fails
         }
+        */
     }
 
     /**
