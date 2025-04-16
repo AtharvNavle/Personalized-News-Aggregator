@@ -5,6 +5,119 @@
     -fx-background-color: #f5f5f5;
 }
 
+/* Dark theme */
+.dark-theme {
+    -fx-background-color: #121212;
+    -fx-text-fill: #e0e0e0;
+}
+
+.dark-theme .label {
+    -fx-text-fill: #e0e0e0;
+}
+
+.dark-theme .button {
+    -fx-background-color: #3d3d3d;
+    -fx-text-fill: white;
+}
+
+.dark-theme .button:hover {
+    -fx-background-color: #4e4e4e;
+}
+
+.dark-theme .article-card {
+    -fx-background-color: #2a2a2a;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.4), 8, 0, 0, 2);
+}
+
+.dark-theme .text-field {
+    -fx-background-color: #3d3d3d;
+    -fx-text-fill: white;
+    -fx-prompt-text-fill: #aaaaaa;
+}
+
+.dark-theme .combo-box {
+    -fx-background-color: #3d3d3d;
+    -fx-text-fill: white;
+}
+
+.dark-theme .combo-box .list-cell {
+    -fx-background-color: #3d3d3d;
+    -fx-text-fill: white;
+}
+
+.dark-theme .combo-box-popup .list-view {
+    -fx-background-color: #3d3d3d;
+    -fx-text-fill: white;
+}
+
+/* Dark theme for login/register views */
+.dark-theme.login-view, .dark-theme.register-view {
+    -fx-background-color: linear-gradient(to bottom, #1a1a1a, #2a2a2a);
+}
+
+.dark-theme .form-container {
+    -fx-background-color: #2d2d2d;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.5), 10, 0, 0, 2);
+}
+
+.dark-theme .app-title {
+    -fx-text-fill: #e0e0e0;
+}
+
+.dark-theme .app-subtitle, .dark-theme .help-text, .dark-theme .footer-text {
+    -fx-text-fill: #aaaaaa;
+}
+
+.dark-theme .app-logo {
+    -fx-text-fill: #3498db;
+}
+
+.dark-theme .news-view {
+    -fx-background-color: #121212;
+}
+
+.dark-theme .header-button {
+    -fx-text-fill: #e0e0e0;
+}
+
+.dark-theme .header-button:hover {
+    -fx-text-fill: #3498db;
+}
+
+.dark-theme .article-card {
+    -fx-background-color: #2d2d2d;
+}
+
+.dark-theme .admin-view {
+    -fx-background-color: #121212;
+}
+
+.dark-theme .table-view {
+    -fx-background-color: #2d2d2d;
+}
+
+.dark-theme .table-view .column-header {
+    -fx-background-color: #1e1e1e;
+}
+
+.dark-theme .table-view .column-header-background .label {
+    -fx-text-fill: #e0e0e0;
+}
+
+.dark-theme .table-row-cell {
+    -fx-background-color: #2d2d2d;
+    -fx-text-fill: #e0e0e0;
+}
+
+.dark-theme .table-row-cell:odd {
+    -fx-background-color: #333333;
+}
+
+.dark-theme .table-row-cell:selected {
+    -fx-background-color: #3498db;
+    -fx-text-fill: white;
+}
+
 /* ---------------------- Login & Register Views ---------------------- */
 .login-view, .register-view {
     -fx-background-color: linear-gradient(to bottom, #f0f0f0, #e0e0e0);

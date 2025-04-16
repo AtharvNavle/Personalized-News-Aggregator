@@ -24,6 +24,7 @@ import javafx.scene.text.TextAlignment;
 import javafx.scene.paint.Color;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.Node;
 
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
@@ -48,10 +49,12 @@ public class NewsView {
     private Button adminButton;
     private Button logoutButton;
     private Button backButton;
+    private Button darkThemeToggleButton;
     private Label welcomeLabel;
     private Label pageTitle;
     private Label noArticlesLabel;
     private ProgressIndicator loadingIndicator;
+    private boolean isDarkTheme = false;
     
     private final Map<String, Button> saveButtonsMap = new HashMap<>();
     private final Map<String, Button> translateButtonsMap = new HashMap<>();
@@ -103,8 +106,13 @@ public class NewsView {
         logoutButton = new Button("Logout");
         logoutButton.getStyleClass().add("header-button");
         
+        // Dark theme toggle button
+        darkThemeToggleButton = new Button("Dark Theme: Off");
+        darkThemeToggleButton.getStyleClass().add("header-button");
+        darkThemeToggleButton.setOnAction(event -> toggleDarkTheme());
+        
         headerBox.getChildren().addAll(pageTitle, welcomeLabel, headerSpacer, 
-                savedArticlesButton, preferencesButton, adminButton, logoutButton);
+                savedArticlesButton, preferencesButton, adminButton, darkThemeToggleButton, logoutButton);
         
         // Toolbar
         HBox toolbarBox = new HBox(10);
@@ -374,6 +382,11 @@ public class NewsView {
         articleCard.setPadding(new Insets(15));
         articleCard.getStyleClass().add("article-card");
         
+        // Apply dark theme if active
+        if (isDarkTheme) {
+            articleCard.getStyleClass().add("dark-theme");
+        }
+        
         // Article title
         Label titleLabel = new Label(article.getTitle());
         titleLabel.setFont(Font.font("System", FontWeight.BOLD, 16));
@@ -550,6 +563,44 @@ public class NewsView {
      */
     public Map<String, Button> getTranslateButtonsMap() {
         return translateButtonsMap;
+    }
+    
+    /**
+     * Gets the dark theme toggle button.
+     * 
+     * @return the dark theme toggle button
+     */
+    public Button getDarkThemeToggleButton() {
+        return darkThemeToggleButton;
+    }
+    
+    /**
+     * Toggles between dark and light themes.
+     */
+    private void toggleDarkTheme() {
+        isDarkTheme = !isDarkTheme;
+        darkThemeToggleButton.setText("Dark Theme: " + (isDarkTheme ? "On" : "Off"));
+        
+        // Apply or remove dark theme class to all UI elements
+        if (isDarkTheme) {
+            root.getStyleClass().add("dark-theme");
+        } else {
+            root.getStyleClass().remove("dark-theme");
+        }
+        
+        // Update all article cards to reflect theme
+        for (Node node : articlesContainer.getChildren()) {
+            if (node instanceof VBox) {
+                VBox articleCard = (VBox) node;
+                if (isDarkTheme) {
+                    if (!articleCard.getStyleClass().contains("dark-theme")) {
+                        articleCard.getStyleClass().add("dark-theme");
+                    }
+                } else {
+                    articleCard.getStyleClass().remove("dark-theme");
+                }
+            }
+        }
     }
 }
 

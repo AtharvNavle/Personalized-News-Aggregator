@@ -107,6 +107,14 @@
                 <version>0.0.8</version>
                 <configuration>
                     <mainClass>com.newsaggregator.Main</mainClass>
+                    <options>
+                        <option>--add-opens</option>
+                        <option>java.base/java.lang=ALL-UNNAMED</option>
+                        <option>--add-opens</option>
+                        <option>java.base/java.nio=ALL-UNNAMED</option>
+                        <option>--add-opens</option>
+                        <option>java.base/java.util=ALL-UNNAMED</option>
+                    </options>
                 </configuration>
             </plugin>
             <plugin>

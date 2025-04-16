@@ -270,11 +270,15 @@ public class NewsController {
         // Reset to the first page
         currentPage = 1;
         
-        // Clear the current search query if needed
-        if (!currentQuery.isEmpty()) {
-            currentQuery = "";
-            newsView.getSearchField().clear();
-        }
+        // Always clear any search query
+        currentQuery = "";
+        newsView.getSearchField().clear();
+        
+        // Clear existing articles
+        newsView.getArticlesContainer().getChildren().clear();
+        
+        // Show loading indicator
+        newsView.getLoadingIndicator().setVisible(true);
         
         // Load fresh articles
         loadNews();
@@ -415,8 +419,9 @@ public class NewsController {
             // Save original article for later reverting
             originalArticles.put(article.getId(), article);
             
-            // Get user's preferred language or use a default
-            String targetLanguage = currentUser.getPreferredLanguage();
+            // For translation functionality, we'll translate to English instead of user's preferred language
+            // This makes more sense for users who have their preferred language set to a non-English language
+            String targetLanguage = "en";
             
             // Translate the article
             try {
