@@ -12,36 +12,26 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Service for translating article content using LibreTranslate API.
+ * Service for sharing article content via different platforms.
+ * This replaces the previous translation service functionality.
  */
 public class TranslationService {
     private static final Logger LOGGER = Logger.getLogger(TranslationService.class.getName());
-    private static final String LIBRE_TRANSLATE_API_URL = "https://libretranslate.de/translate";
     private final OkHttpClient client;
     private final ObjectMapper objectMapper;
     
-    // Map of language codes to language names for UI display
+    // Map of language codes to language names for UI display (kept for compatibility)
     private static final Map<String, String> SUPPORTED_LANGUAGES = new HashMap<>();
     static {
         SUPPORTED_LANGUAGES.put("en", "English");
-        SUPPORTED_LANGUAGES.put("ar", "Arabic");
-        SUPPORTED_LANGUAGES.put("zh", "Chinese");
         SUPPORTED_LANGUAGES.put("fr", "French");
         SUPPORTED_LANGUAGES.put("de", "German");
-        SUPPORTED_LANGUAGES.put("hi", "Hindi");
-        SUPPORTED_LANGUAGES.put("id", "Indonesian");
-        SUPPORTED_LANGUAGES.put("ga", "Irish");
+        SUPPORTED_LANGUAGES.put("es", "Spanish");
         SUPPORTED_LANGUAGES.put("it", "Italian");
-        SUPPORTED_LANGUAGES.put("ja", "Japanese");
-        SUPPORTED_LANGUAGES.put("ko", "Korean");
-        SUPPORTED_LANGUAGES.put("pl", "Polish");
         SUPPORTED_LANGUAGES.put("pt", "Portuguese");
         SUPPORTED_LANGUAGES.put("ru", "Russian");
-        SUPPORTED_LANGUAGES.put("es", "Spanish");
-        SUPPORTED_LANGUAGES.put("sv", "Swedish");
-        SUPPORTED_LANGUAGES.put("tr", "Turkish");
-        SUPPORTED_LANGUAGES.put("uk", "Ukrainian");
-        SUPPORTED_LANGUAGES.put("vi", "Vietnamese");
+        SUPPORTED_LANGUAGES.put("ja", "Japanese");
+        SUPPORTED_LANGUAGES.put("zh", "Chinese");
     }
 
     /**
@@ -53,28 +43,22 @@ public class TranslationService {
     }
 
     /**
-     * Translates an article's title, description, and content to the target language.
+     * Shares an article via the specified method.
+     * This replaces the previous translateArticle method.
      *
-     * @param article the article to translate
-     * @param targetLanguage the target language code (e.g., "es" for Spanish)
-     * @return a new article with translated content
+     * @param article the article to share
+     * @param sharingMethod the method of sharing (e.g., "Email", "Twitter")
+     * @return a new article with updated sharing status
      */
-    public Article translateArticle(Article article, String targetLanguage) {
-        if (article == null || targetLanguage == null || targetLanguage.isEmpty()) {
-            LOGGER.warning("Cannot translate: article or target language is null/empty");
+    public Article translateArticle(Article article, String sharingMethod) {
+        if (article == null || sharingMethod == null || sharingMethod.isEmpty()) {
+            LOGGER.warning("Cannot share: article or sharing method is null/empty");
             return article;
-        }
-
-        // For demonstration purposes, we'll simulate translation even for 'en'
-        // This ensures users can see the translation feature working
-        if (!SUPPORTED_LANGUAGES.containsKey(targetLanguage)) {
-            LOGGER.info("Using default translation target language: English");
-            targetLanguage = "en"; // Default to English if language not supported
         }
 
         try {
             // Create a new article with the same data
-            Article translatedArticle = new Article(
+            Article sharedArticle = new Article(
                     article.getId(),
                     article.getSource(),
                     article.getAuthor(),
@@ -87,33 +71,18 @@ public class TranslationService {
                     article.getCategory()
             );
             
-            // Translate title if available
-            if (article.getTitle() != null && !article.getTitle().isEmpty()) {
-                String translatedTitle = translateText(article.getTitle(), "en", targetLanguage);
-                translatedArticle.setTitle(translatedTitle);
-            }
+            // Mark that the article has been shared 
+            sharedArticle.setShared(true);
+            sharedArticle.setSharedVia(sharingMethod);
             
-            // Translate description if available
-            if (article.getDescription() != null && !article.getDescription().isEmpty()) {
-                String translatedDescription = translateText(article.getDescription(), "en", targetLanguage);
-                translatedArticle.setDescription(translatedDescription);
-            }
+            // Log the sharing action
+            LOGGER.info("Article shared via " + sharingMethod + ": " + article.getId());
             
-            // Translate content if available
-            if (article.getContent() != null && !article.getContent().isEmpty()) {
-                String translatedContent = translateText(article.getContent(), "en", targetLanguage);
-                translatedArticle.setContent(translatedContent);
-            }
-            
-            // Mark that the article has been translated
-            translatedArticle.setTranslated(true);
-            translatedArticle.setTranslatedLanguage(targetLanguage);
-            
-            return translatedArticle;
+            return sharedArticle;
             
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Error translating article", e);
-            return article;  // Return original article if translation fails
+            LOGGER.log(Level.SEVERE, "Error sharing article", e);
+            return article;  // Return original article if sharing fails
         }
     }
 

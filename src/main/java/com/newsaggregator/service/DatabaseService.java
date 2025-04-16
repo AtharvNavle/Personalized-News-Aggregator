@@ -3,6 +3,7 @@ package com.newsaggregator.service;
 import com.newsaggregator.model.Article;
 import com.newsaggregator.model.Category;
 import com.newsaggregator.model.User;
+import com.newsaggregator.model.UserCreatedArticle;
 import com.newsaggregator.util.PasswordHasher;
 
 import java.sql.*;
@@ -132,6 +133,19 @@ public class DatabaseService {
                     "saved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
                     "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE, " +
                     "CONSTRAINT unique_user_article UNIQUE (user_id, article_id))");
+
+            // User-created articles table
+            stmt.execute("CREATE TABLE IF NOT EXISTS user_created_articles (" +
+                    "id INT AUTO_INCREMENT PRIMARY KEY, " +
+                    "author_id INT NOT NULL, " +
+                    "title VARCHAR(255) NOT NULL, " +
+                    "description TEXT, " +
+                    "content TEXT NOT NULL, " +
+                    "image_url VARCHAR(500), " +
+                    "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
+                    "category VARCHAR(50) NOT NULL, " +
+                    "approved BOOLEAN DEFAULT FALSE, " +
+                    "FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE)");
 
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Failed to create tables", e);
@@ -440,6 +454,196 @@ public class DatabaseService {
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Error loading user preferences", e);
         }
+    }
+    
+    /**
+     * Creates a new user-created article.
+     *
+     * @param article the article to create
+     * @return the created article with its ID set, or null if creation failed
+     */
+    public UserCreatedArticle createUserArticle(UserCreatedArticle article) {
+        String query = "INSERT INTO user_created_articles (author_id, title, description, content, image_url, category, approved) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?)";
+        try (PreparedStatement pstmt = connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
+            pstmt.setInt(1, article.getAuthorId());
+            pstmt.setString(2, article.getTitle());
+            pstmt.setString(3, article.getDescription());
+            pstmt.setString(4, article.getContent());
+            pstmt.setString(5, article.getImageUrl());
+            pstmt.setString(6, article.getCategory().getApiName());
+            pstmt.setBoolean(7, article.isApproved());
+            
+            int affectedRows = pstmt.executeUpdate();
+            if (affectedRows > 0) {
+                ResultSet generatedKeys = pstmt.getGeneratedKeys();
+                if (generatedKeys.next()) {
+                    article.setId(generatedKeys.getInt(1));
+                    return article;
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error creating user article", e);
+        }
+        return null;
+    }
+    
+    /**
+     * Updates an existing user-created article.
+     *
+     * @param article the article to update
+     * @return true if the update was successful, false otherwise
+     */
+    public boolean updateUserArticle(UserCreatedArticle article) {
+        String query = "UPDATE user_created_articles SET title = ?, description = ?, content = ?, " +
+                "image_url = ?, category = ?, approved = ? WHERE id = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+            pstmt.setString(1, article.getTitle());
+            pstmt.setString(2, article.getDescription());
+            pstmt.setString(3, article.getContent());
+            pstmt.setString(4, article.getImageUrl());
+            pstmt.setString(5, article.getCategory().getApiName());
+            pstmt.setBoolean(6, article.isApproved());
+            pstmt.setInt(7, article.getId());
+            
+            int affectedRows = pstmt.executeUpdate();
+            return affectedRows > 0;
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error updating user article", e);
+            return false;
+        }
+    }
+    
+    /**
+     * Deletes a user-created article.
+     *
+     * @param articleId the ID of the article to delete
+     * @return true if the deletion was successful, false otherwise
+     */
+    public boolean deleteUserArticle(int articleId) {
+        String query = "DELETE FROM user_created_articles WHERE id = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+            pstmt.setInt(1, articleId);
+            
+            int affectedRows = pstmt.executeUpdate();
+            return affectedRows > 0;
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error deleting user article", e);
+            return false;
+        }
+    }
+    
+    /**
+     * Retrieves a user-created article by its ID.
+     *
+     * @param articleId the ID of the article
+     * @return the article, or null if not found
+     */
+    public UserCreatedArticle getUserArticleById(int articleId) {
+        String query = "SELECT a.*, u.username FROM user_created_articles a " +
+                "JOIN users u ON a.author_id = u.id WHERE a.id = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+            pstmt.setInt(1, articleId);
+            ResultSet rs = pstmt.executeQuery();
+            
+            if (rs.next()) {
+                return createUserArticleFromResultSet(rs);
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error retrieving user article", e);
+        }
+        return null;
+    }
+    
+    /**
+     * Retrieves all user-created articles.
+     *
+     * @param approvedOnly whether to retrieve only approved articles
+     * @return a list of user-created articles
+     */
+    public List<UserCreatedArticle> getAllUserArticles(boolean approvedOnly) {
+        List<UserCreatedArticle> articles = new ArrayList<>();
+        String query = "SELECT a.*, u.username FROM user_created_articles a " +
+                "JOIN users u ON a.author_id = u.id" +
+                (approvedOnly ? " WHERE a.approved = TRUE" : "") +
+                " ORDER BY a.created_at DESC";
+        try (PreparedStatement pstmt = connection.prepareStatement(query);
+             ResultSet rs = pstmt.executeQuery()) {
+            
+            while (rs.next()) {
+                articles.add(createUserArticleFromResultSet(rs));
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error retrieving user articles", e);
+        }
+        return articles;
+    }
+    
+    /**
+     * Retrieves all user-created articles by a specific user.
+     *
+     * @param userId the ID of the user
+     * @return a list of user-created articles
+     */
+    public List<UserCreatedArticle> getUserArticlesByAuthor(int userId) {
+        List<UserCreatedArticle> articles = new ArrayList<>();
+        String query = "SELECT a.*, u.username FROM user_created_articles a " +
+                "JOIN users u ON a.author_id = u.id WHERE a.author_id = ? " +
+                "ORDER BY a.created_at DESC";
+        try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+            pstmt.setInt(1, userId);
+            ResultSet rs = pstmt.executeQuery();
+            
+            while (rs.next()) {
+                articles.add(createUserArticleFromResultSet(rs));
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error retrieving user articles by author", e);
+        }
+        return articles;
+    }
+    
+    /**
+     * Approves or unapproves a user-created article.
+     *
+     * @param articleId the ID of the article
+     * @param approved whether the article should be approved
+     * @return true if the update was successful, false otherwise
+     */
+    public boolean setUserArticleApproval(int articleId, boolean approved) {
+        String query = "UPDATE user_created_articles SET approved = ? WHERE id = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+            pstmt.setBoolean(1, approved);
+            pstmt.setInt(2, articleId);
+            
+            int affectedRows = pstmt.executeUpdate();
+            return affectedRows > 0;
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error updating article approval status", e);
+            return false;
+        }
+    }
+    
+    /**
+     * Creates a UserCreatedArticle object from a ResultSet.
+     *
+     * @param rs the ResultSet containing article data
+     * @return the created UserCreatedArticle
+     * @throws SQLException if a database error occurs
+     */
+    private UserCreatedArticle createUserArticleFromResultSet(ResultSet rs) throws SQLException {
+        return new UserCreatedArticle(
+                rs.getInt("id"),
+                rs.getInt("author_id"),
+                rs.getString("username"),
+                rs.getString("title"),
+                rs.getString("description"),
+                rs.getString("content"),
+                rs.getString("image_url"),
+                rs.getTimestamp("created_at").toLocalDateTime(),
+                Category.fromApiName(rs.getString("category")),
+                rs.getBoolean("approved")
+        );
     }
 
     /**

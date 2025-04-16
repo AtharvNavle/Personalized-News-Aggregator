@@ -19,8 +19,8 @@ public class Article {
     private Category category;
     private boolean saved;
     private int userId;
-    private boolean translated;
-    private String translatedLanguage;
+    private boolean shared;
+    private String sharedVia;
 
     /**
      * Default constructor.
@@ -46,12 +46,12 @@ public class Article {
         this.category = original.category;
         this.saved = original.saved;
         this.userId = original.userId;
-        this.translated = false;
-        this.translatedLanguage = null;
+        this.shared = false;
+        this.sharedVia = null;
     }
     
     /**
-     * Constructor for creating a translated copy of an article.
+     * Constructor for creating a sharable copy of an article.
      *
      * @param id                The unique identifier of the article
      * @param source            The source of the article
@@ -78,8 +78,8 @@ public class Article {
         this.publishedAt = publishedAt;
         this.category = category;
         this.saved = false;
-        this.translated = false;
-        this.translatedLanguage = null;
+        this.shared = false;
+        this.sharedVia = null;
     }
 
     /**
@@ -109,8 +109,8 @@ public class Article {
         this.source = source;
         this.category = category;
         this.saved = false;
-        this.translated = false;
-        this.translatedLanguage = null;
+        this.shared = false;
+        this.sharedVia = null;
     }
 
     public String getId() {
@@ -209,20 +209,20 @@ public class Article {
         this.userId = userId;
     }
     
-    public boolean isTranslated() {
-        return translated;
+    public boolean isShared() {
+        return shared;
     }
     
-    public void setTranslated(boolean translated) {
-        this.translated = translated;
+    public void setShared(boolean shared) {
+        this.shared = shared;
     }
     
-    public String getTranslatedLanguage() {
-        return translatedLanguage;
+    public String getSharedVia() {
+        return sharedVia;
     }
     
-    public void setTranslatedLanguage(String translatedLanguage) {
-        this.translatedLanguage = translatedLanguage;
+    public void setSharedVia(String sharedVia) {
+        this.sharedVia = sharedVia;
     }
 
     @Override

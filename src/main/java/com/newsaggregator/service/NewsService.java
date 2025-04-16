@@ -320,32 +320,63 @@ public class NewsService {
     }
 
     /**
-     * Translates an article to the specified language.
+     * Shares an article via the specified method.
      *
-     * @param article        the article to translate
-     * @param targetLanguage the target language code
-     * @return the translated article
+     * @param article      the article to share
+     * @param sharingInfo  the method of sharing and recipient info (e.g., "Email:user@example.com")
+     * @return the shared article with updated sharing status
      */
-    public Article translateArticle(Article article, String targetLanguage) {
-        if (article == null || targetLanguage == null || targetLanguage.isEmpty()) {
-            LOGGER.warning("Cannot translate: article or target language is null/empty");
+    public Article shareArticle(Article article, String sharingInfo) {
+        if (article == null || sharingInfo == null || sharingInfo.isEmpty()) {
+            LOGGER.warning("Cannot share: article or sharing method is null/empty");
             return article;
         }
         
-        // If article is already translated to the requested language, return it
-        if (article.isTranslated() && targetLanguage.equals(article.getTranslatedLanguage())) {
-            LOGGER.info("Article already translated to: " + targetLanguage);
-            return article;
-        }
+        String[] parts = sharingInfo.split(":", 2);
+        String sharingMethod = parts[0];
+        String recipient = parts.length > 1 ? parts[1] : "";
         
-        // Use the translation service to translate the article
+        // Log sharing request
+        LOGGER.info("Sharing article: " + article.getId() + " via: " + sharingMethod + 
+                   (recipient.isEmpty() ? "" : " to " + recipient));
+        
         try {
-            Article translatedArticle = translationService.translateArticle(article, targetLanguage);
-            LOGGER.info("Article translated successfully to: " + targetLanguage);
-            return translatedArticle;
+            // In a real implementation, this would integrate with actual sharing mechanisms
+            // For demonstration, we just update the article's sharing status
+            
+            article.setShared(true);
+            
+            if ("Email".equals(sharingMethod) && !recipient.isEmpty()) {
+                article.setSharedVia(sharingMethod + " to " + recipient);
+                
+                // In a real app, we would use JavaMail or a similar API to send the email
+                // For example:
+                // sendEmail(recipient, "Check out this article", article.getTitle(), article.getUrl());
+                
+                LOGGER.info("Would send email to: " + recipient + " with article: " + article.getTitle());
+            } else if ("Twitter".equals(sharingMethod) || "Facebook".equals(sharingMethod) || "LinkedIn".equals(sharingMethod)) {
+                article.setSharedVia(sharingMethod);
+                
+                // In a real app, we would use the respective social media APIs
+                // For example with Twitter:
+                // twitterClient.updateStatus("Check out this article: " + article.getTitle() + " " + article.getUrl());
+                
+                LOGGER.info("Would post to " + sharingMethod + ": " + article.getTitle());
+            } else if ("Copy Link".equals(sharingMethod)) {
+                article.setSharedVia("Copied link");
+                LOGGER.info("Article link copied to clipboard: " + article.getUrl());
+            } else {
+                article.setSharedVia(sharingMethod);
+            }
+            
+            // Record the sharing action in the database
+            // This would be implemented in a real application by storing sharing records
+            
+            LOGGER.info("Article shared successfully via: " + sharingMethod);
+            return article;
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Failed to translate article", e);
-            return article;  // Return original article if translation fails
+            LOGGER.log(Level.SEVERE, "Failed to share article", e);
+            return article;  // Return original article if sharing fails
         }
     }
     

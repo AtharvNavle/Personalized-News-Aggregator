@@ -45,6 +45,7 @@ public class NewsView {
     private Button nextButton;
     private Label currentPageLabel;
     private Button savedArticlesButton;
+    private Button sharingHistoryButton;
     private Button preferencesButton;
     private Button adminButton;
     private Button logoutButton;
@@ -54,10 +55,10 @@ public class NewsView {
     private Label pageTitle;
     private Label noArticlesLabel;
     private ProgressIndicator loadingIndicator;
-    private boolean isDarkTheme = false;
+    private boolean isDarkTheme = true; // Start in dark mode by default
     
     private final Map<String, Button> saveButtonsMap = new HashMap<>();
-    private final Map<String, Button> translateButtonsMap = new HashMap<>();
+    private final Map<String, Button> shareButtonsMap = new HashMap<>();
     private final UserService userService;
 
     /**
@@ -77,6 +78,11 @@ public class NewsView {
         root = new BorderPane();
         root.setPadding(new Insets(15));
         root.getStyleClass().add("news-view");
+        
+        // Apply dark theme by default at startup
+        if (isDarkTheme) {
+            root.getStyleClass().add("dark-theme");
+        }
 
         // Header
         HBox headerBox = new HBox(15);
@@ -96,6 +102,9 @@ public class NewsView {
         savedArticlesButton = new Button("Saved Articles");
         savedArticlesButton.getStyleClass().add("header-button");
         
+        sharingHistoryButton = new Button("Sharing History");
+        sharingHistoryButton.getStyleClass().add("header-button");
+        
         preferencesButton = new Button("Preferences");
         preferencesButton.getStyleClass().add("header-button");
         
@@ -107,12 +116,12 @@ public class NewsView {
         logoutButton.getStyleClass().add("header-button");
         
         // Dark theme toggle button
-        darkThemeToggleButton = new Button("Dark Theme: Off");
+        darkThemeToggleButton = new Button("Dark Theme: On"); // Changed to On since dark theme is enabled by default
         darkThemeToggleButton.getStyleClass().add("header-button");
         darkThemeToggleButton.setOnAction(event -> toggleDarkTheme());
         
         headerBox.getChildren().addAll(pageTitle, welcomeLabel, headerSpacer, 
-                savedArticlesButton, preferencesButton, adminButton, darkThemeToggleButton, logoutButton);
+                savedArticlesButton, sharingHistoryButton, preferencesButton, adminButton, darkThemeToggleButton, logoutButton);
         
         // Toolbar
         HBox toolbarBox = new HBox(10);
@@ -293,6 +302,15 @@ public class NewsView {
     public Button getSavedArticlesButton() {
         return savedArticlesButton;
     }
+    
+    /**
+     * Gets the sharing history button.
+     *
+     * @return the sharing history button
+     */
+    public Button getSharingHistoryButton() {
+        return sharingHistoryButton;
+    }
 
     /**
      * Gets the preferences button.
@@ -372,11 +390,11 @@ public class NewsView {
      * @param article         the article to add
      * @param onOpenAction    the action to perform when opening the article
      * @param onSaveAction    the action to perform when saving/unsaving the article
-     * @param onTranslateAction the action to perform when translating the article
+     * @param onShareAction   the action to perform when sharing the article
      */
     public void addArticleToUI(Article article, EventHandler<ActionEvent> onOpenAction, 
                                EventHandler<ActionEvent> onSaveAction,
-                               EventHandler<ActionEvent> onTranslateAction) {
+                               EventHandler<ActionEvent> onShareAction) {
         // Article card container
         VBox articleCard = new VBox(10);
         articleCard.setPadding(new Insets(15));
@@ -508,16 +526,16 @@ public class NewsView {
         // Store save button reference for updating later
         saveButtonsMap.put(article.getId(), saveButton);
         
-        // Add translate button
-        Button translateButton = new Button(article.isTranslated() ? "Show Original" : "Translate");
-        translateButton.getStyleClass().add("action-button");
-        translateButton.setId("translate-" + article.getId());
-        translateButton.setOnAction(onTranslateAction);
+        // Add share button
+        Button shareButton = new Button("Share");
+        shareButton.getStyleClass().add("action-button");
+        shareButton.setId("share-" + article.getId());
+        shareButton.setOnAction(onShareAction);
         
-        // Store translate button reference for updating later
-        translateButtonsMap.put(article.getId(), translateButton);
+        // Store share button reference for updating later
+        shareButtonsMap.put(article.getId(), shareButton);
         
-        actionBox.getChildren().addAll(openButton, saveButton, translateButton);
+        actionBox.getChildren().addAll(openButton, saveButton, shareButton);
         
         // Add components to the article card
         // IMPORTANT: Clear any existing children first to avoid duplicates
@@ -545,24 +563,68 @@ public class NewsView {
     }
     
     /**
-     * Updates the translate button text for an article.
+     * Updates the share button text and appearance for an article.
      *
-     * @param article the article whose translate button to update
+     * @param article the article whose share button to update
      */
-    public void updateArticleTranslateButton(Article article) {
-        Button translateButton = translateButtonsMap.get(article.getId());
-        if (translateButton != null) {
-            translateButton.setText(article.isTranslated() ? "Show Original" : "Translate");
+    public void updateArticleShareButton(Article article) {
+        Button shareButton = shareButtonsMap.get(article.getId());
+        if (shareButton != null) {
+            if (article.isShared()) {
+                String sharedText;
+                if (article.getSharedVia() != null) {
+                    if (article.getSharedVia().startsWith("Email to")) {
+                        // Truncate long email addresses for display
+                        String recipient = article.getSharedVia().substring(9);
+                        if (recipient.length() > 15) {
+                            recipient = recipient.substring(0, 12) + "...";
+                        }
+                        sharedText = "Shared via Email to " + recipient;
+                    } else if ("Copied link".equals(article.getSharedVia())) {
+                        sharedText = "Link copied";
+                    } else {
+                        sharedText = "Shared via " + article.getSharedVia();
+                    }
+                } else {
+                    sharedText = "Shared";
+                }
+                
+                shareButton.setText(sharedText);
+                shareButton.getStyleClass().add("shared-button");
+                
+                // Add visual indicator based on sharing method
+                if (article.getSharedVia() != null) {
+                    if (article.getSharedVia().startsWith("Email")) {
+                        shareButton.setStyle("-fx-background-color: #4285F4;");
+                    } else if (article.getSharedVia().equals("Twitter")) {
+                        shareButton.setStyle("-fx-background-color: #1DA1F2;");
+                    } else if (article.getSharedVia().equals("Facebook")) {
+                        shareButton.setStyle("-fx-background-color: #4267B2;");
+                    } else if (article.getSharedVia().equals("LinkedIn")) {
+                        shareButton.setStyle("-fx-background-color: #0077B5;");
+                    } else if (article.getSharedVia().equals("Copied link")) {
+                        shareButton.setStyle("-fx-background-color: #34A853;");
+                    } else {
+                        shareButton.setStyle("-fx-background-color: #673AB7;");
+                    }
+                    // Add a more visible text color
+                    shareButton.setStyle(shareButton.getStyle() + " -fx-text-fill: white;");
+                }
+            } else {
+                shareButton.setText("Share Article");
+                shareButton.getStyleClass().remove("shared-button");
+                shareButton.setStyle(""); // Reset any custom styles
+            }
         }
     }
     
     /**
-     * Gets the map of translate buttons.
+     * Gets the map of share buttons.
      *
-     * @return the map of translate buttons
+     * @return the map of share buttons
      */
-    public Map<String, Button> getTranslateButtonsMap() {
-        return translateButtonsMap;
+    public Map<String, Button> getShareButtonsMap() {
+        return shareButtonsMap;
     }
     
     /**

@@ -1,38 +1,10 @@
 package com.newsaggregator.controller;
 
-import com.newsaggregator.Main;
-import com.newsaggregator.model.Article;
-import com.newsaggregator.model.Category;
-import com.newsaggregator.model.User;
-import com.newsaggregator.service.NewsService;
-import com.newsaggregator.service.UserService;
-import com.newsaggregator.view.AdminView;
-import com.newsaggregator.view.LoginView;
-import com.newsaggregator.view.NewsView;
-
-import javafx.application.Platform;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import javafx.scene.Scene;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Alert.AlertType;
-import javafx.scene.control.Dialog;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.CheckBox;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.control.TextField;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.VBox;
-import javafx.scene.web.WebEngine;
-import javafx.scene.web.WebView;
-import javafx.stage.Modality;
-import javafx.stage.Stage;
-
 import java.awt.Desktop;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -43,6 +15,43 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import javafx.application.Platform;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
+import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Dialog;
+import javafx.scene.control.Label;
+import javafx.scene.control.ProgressIndicator;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.VBox;
+import javafx.scene.web.WebEngine;
+import javafx.scene.web.WebView;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+
+import com.newsaggregator.Main;
+import com.newsaggregator.controller.AdminController;
+import com.newsaggregator.controller.LoginController;
+import com.newsaggregator.model.Article;
+import com.newsaggregator.model.Category;
+import com.newsaggregator.model.User;
+import com.newsaggregator.service.NewsService;
+import com.newsaggregator.service.UserService;
+import com.newsaggregator.view.AdminView;
+import com.newsaggregator.view.LoginView;
+import com.newsaggregator.view.NewsView;
 
 /**
  * Controller for handling news operations and events.
@@ -60,7 +69,8 @@ public class NewsController {
     private int currentPage = 1;
     private final int articlesPerPage = 20;
     private boolean isLoading = false;
-    private final Map<String, Article> originalArticles = new HashMap<>(); // Store original articles for reverting translations
+    private final Map<String, Article> sharedArticles = new HashMap<>(); // Store articles that have been shared
+    private final List<Article> sharingHistory = new ArrayList<>(); // Store sharing history
 
     /**
      * Constructor for NewsController.
@@ -103,6 +113,9 @@ public class NewsController {
         
         // Initialize saved articles button
         newsView.getSavedArticlesButton().setOnAction(event -> showSavedArticles());
+        
+        // Initialize sharing history button
+        newsView.getSharingHistoryButton().setOnAction(event -> showSharingHistory());
         
         // Initialize preferences button
         newsView.getPreferencesButton().setOnAction(event -> showPreferencesDialog());
@@ -211,7 +224,7 @@ public class NewsController {
                 // Add article to the UI
                 newsView.addArticleToUI(article, event -> openArticle(article), 
                         event -> toggleSaveArticle(article),
-                        event -> translateArticle(article));
+                        event -> shareArticle(article));
             }
         }
         
@@ -404,58 +417,179 @@ public class NewsController {
     }
 
     /**
-     * Translates an article to the user's preferred language or reverts to original.
+     * Shares an article via email, social media, or reverts sharing state.
      *
-     * @param article the article to translate
+     * @param article the article to share
      */
-    private void translateArticle(Article article) {
+    private void shareArticle(Article article) {
         User currentUser = userService.getCurrentUser();
         if (currentUser == null) {
-            showAlert(AlertType.WARNING, "Not Logged In", "You must be logged in to translate articles");
+            showAlert(AlertType.WARNING, "Not Logged In", "You must be logged in to share articles");
             return;
         }
         
-        if (!article.isTranslated()) {
-            // Save original article for later reverting
-            originalArticles.put(article.getId(), article);
+        if (!article.isShared()) {
+            // Save article for tracking sharing status
+            sharedArticles.put(article.getId(), article);
             
-            // For translation functionality, we'll translate to English instead of user's preferred language
-            // This makes more sense for users who have their preferred language set to a non-English language
-            String targetLanguage = "en";
+            // Show sharing options dialog
+            Dialog<String> dialog = new Dialog<>();
+            dialog.setTitle("Share Article");
+            dialog.setHeaderText("Share \"" + article.getTitle() + "\"");
             
-            // Translate the article
-            try {
-                Article translatedArticle = newsService.translateArticle(article, targetLanguage);
+            // Create the sharing options
+            ComboBox<String> sharingOptions = new ComboBox<>();
+            sharingOptions.getItems().addAll("Email", "Twitter", "Facebook", "LinkedIn", "Copy Link");
+            sharingOptions.setValue("Email");
+            
+            // Additional fields based on the selection
+            TextField recipientField = new TextField();
+            recipientField.setPromptText("Enter recipient email");
+            
+            TextArea messageField = new TextArea();
+            messageField.setPromptText("Add a message (optional)");
+            messageField.setPrefRowCount(3);
+            messageField.setPrefColumnCount(30);
+            
+            Label statusLabel = new Label("");
+            statusLabel.setVisible(false);
+            statusLabel.setStyle("-fx-text-fill: green;");
+            
+            // Set up the grid
+            GridPane grid = new GridPane();
+            grid.setHgap(10);
+            grid.setVgap(10);
+            grid.setPadding(new javafx.geometry.Insets(20, 150, 10, 10));
+            
+            grid.add(new Label("Share via:"), 0, 0);
+            grid.add(sharingOptions, 1, 0);
+            
+            // Additional row for recipient
+            grid.add(new Label("To:"), 0, 1);
+            grid.add(recipientField, 1, 1);
+            
+            // Message area
+            grid.add(new Label("Message:"), 0, 2);
+            grid.add(messageField, 1, 2);
+            
+            // Status label
+            grid.add(statusLabel, 0, 3, 2, 1);
+            
+            // Add article URL for reference
+            Label urlLabel = new Label("Article URL:");
+            TextField urlField = new TextField(article.getUrl());
+            urlField.setEditable(false);
+            grid.add(urlLabel, 0, 4);
+            grid.add(urlField, 1, 4);
+            
+            // Add a copy link button for convenience
+            Button copyLinkButton = new Button("Copy to Clipboard");
+            grid.add(copyLinkButton, 1, 5);
+            
+            copyLinkButton.setOnAction(event -> {
+                // Copy the URL to clipboard
+                final javafx.scene.input.Clipboard clipboard = javafx.scene.input.Clipboard.getSystemClipboard();
+                final javafx.scene.input.ClipboardContent content = new javafx.scene.input.ClipboardContent();
+                content.putString(urlField.getText());
+                clipboard.setContent(content);
                 
-                // Update UI to reflect translation state
-                if (translatedArticle.isTranslated()) {
-                    newsView.updateArticleTranslateButton(translatedArticle);
-                    showAlert(AlertType.INFORMATION, "Article Translated", 
-                            "Article has been translated to " + translatedArticle.getTranslatedLanguage());
-                } else {
-                    showAlert(AlertType.WARNING, "Translation Failed", 
-                            "Could not translate the article. Please try again later.");
+                // Show confirmation
+                statusLabel.setText("Link copied to clipboard!");
+                statusLabel.setVisible(true);
+            });
+            
+            // Update fields based on sharing method
+            sharingOptions.setOnAction(event -> {
+                String selectedMethod = sharingOptions.getValue();
+                
+                if ("Email".equals(selectedMethod)) {
+                    recipientField.setPromptText("Enter recipient email");
+                    recipientField.setVisible(true);
+                    messageField.setVisible(true);
+                } else if ("Twitter".equals(selectedMethod) || "Facebook".equals(selectedMethod) || "LinkedIn".equals(selectedMethod)) {
+                    recipientField.setVisible(false);
+                    messageField.setPromptText("Add a message to your post (optional)");
+                    messageField.setVisible(true);
+                } else if ("Copy Link".equals(selectedMethod)) {
+                    recipientField.setVisible(false);
+                    messageField.setVisible(false);
                 }
-            } catch (Exception e) {
-                LOGGER.log(Level.SEVERE, "Failed to translate article", e);
-                showAlert(AlertType.ERROR, "Translation Error", 
-                        "An error occurred while translating the article: " + e.getMessage());
-            }
-        } else {
-            // Revert to original article
-            Article originalArticle = originalArticles.get(article.getId());
-            if (originalArticle != null) {
-                article.setTranslated(false);
-                article.setTranslatedLanguage(null);
-                article.setTitle(originalArticle.getTitle());
-                article.setDescription(originalArticle.getDescription());
-                article.setContent(originalArticle.getContent());
                 
-                // Update UI
-                newsView.updateArticleTranslateButton(article);
-                showAlert(AlertType.INFORMATION, "Original Article", 
-                        "Showing original article content");
-            }
+                statusLabel.setVisible(false);
+            });
+            
+            dialog.getDialogPane().setContent(grid);
+            dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+            
+            // Process the result
+            dialog.setResultConverter(dialogButton -> {
+                if (dialogButton == ButtonType.OK) {
+                    String method = sharingOptions.getValue();
+                    String to = recipientField.getText();
+                    String message = messageField.getText();
+                    
+                    // For real functionality, we would handle different methods differently
+                    if ("Email".equals(method) && (to == null || to.trim().isEmpty())) {
+                        statusLabel.setText("Please enter a recipient email!");
+                        statusLabel.setStyle("-fx-text-fill: red;");
+                        statusLabel.setVisible(true);
+                        return null;
+                    }
+                    
+                    // If copy link is selected, copy to clipboard
+                    if ("Copy Link".equals(method)) {
+                        final javafx.scene.input.Clipboard clipboard = javafx.scene.input.Clipboard.getSystemClipboard();
+                        final javafx.scene.input.ClipboardContent content = new javafx.scene.input.ClipboardContent();
+                        content.putString(article.getUrl());
+                        clipboard.setContent(content);
+                    }
+                    
+                    // Return sharing details
+                    return method + (to != null && !to.isEmpty() ? ":" + to : "");
+                }
+                return null;
+            });
+            
+            Optional<String> result = dialog.showAndWait();
+            result.ifPresent(sharingMethod -> {
+                try {
+                    String method = sharingMethod.split(":")[0];
+                    
+                    // Use NewsService to handle sharing and update article status
+                    Article sharedArticle = newsService.shareArticle(article, sharingMethod);
+                    
+                    // Add to sharing history
+                    sharingHistory.add(0, sharedArticle); // Add at the beginning for most recent first
+                    
+                    // Update UI to reflect sharing state
+                    newsView.updateArticleShareButton(sharedArticle);
+                    
+                    // Specific message based on sharing method
+                    if ("Copy Link".equals(method)) {
+                        showAlert(AlertType.INFORMATION, "Link Copied", 
+                              "Article link has been copied to your clipboard");
+                    } else if ("Email".equals(method)) {
+                        showAlert(AlertType.INFORMATION, "Email Sharing", 
+                              "Article would be shared via email. In a real app, this would open your email client.");
+                    } else {
+                        showAlert(AlertType.INFORMATION, "Article Shared", 
+                              "Article has been shared via " + method);
+                    }
+                } catch (Exception e) {
+                    LOGGER.log(Level.SEVERE, "Failed to share article", e);
+                    showAlert(AlertType.ERROR, "Sharing Error", 
+                              "An error occurred while sharing the article: " + e.getMessage());
+                }
+            });
+        } else {
+            // Reset sharing status
+            article.setShared(false);
+            article.setSharedVia(null);
+            
+            // Update UI
+            newsView.updateArticleShareButton(article);
+            showAlert(AlertType.INFORMATION, "Sharing Reset", 
+                     "Article sharing status has been reset");
         }
     }
     
@@ -483,11 +617,51 @@ public class NewsController {
         for (Article article : savedArticles) {
             newsView.addArticleToUI(article, event -> openArticle(article), 
                     event -> toggleSaveArticle(article),
-                    event -> translateArticle(article));
+                    event -> shareArticle(article));
         }
         
         // Update UI to show we're in saved articles mode
         newsView.getPageTitle().setText("Saved Articles");
+        newsView.getCurrentPageLabel().setText("");
+        newsView.getPreviousButton().setDisable(true);
+        newsView.getNextButton().setDisable(true);
+        
+        // Add a back button to return to normal news view
+        newsView.getBackButton().setVisible(true);
+        newsView.getBackButton().setOnAction(event -> {
+            newsView.getPageTitle().setText("News Feed");
+            newsView.getBackButton().setVisible(false);
+            refreshNews();
+        });
+    }
+
+    /**
+     * Shows the user's sharing history.
+     */
+    private void showSharingHistory() {
+        User currentUser = userService.getCurrentUser();
+        if (currentUser == null) {
+            showAlert(AlertType.WARNING, "Not Logged In", "You must be logged in to view sharing history");
+            return;
+        }
+        
+        if (sharingHistory.isEmpty()) {
+            showAlert(AlertType.INFORMATION, "No Sharing History", "You haven't shared any articles yet");
+            return;
+        }
+        
+        // Clear the current articles
+        newsView.getArticlesContainer().getChildren().clear();
+        
+        // Display the shared articles
+        for (Article article : sharingHistory) {
+            newsView.addArticleToUI(article, event -> openArticle(article), 
+                    event -> toggleSaveArticle(article),
+                    event -> shareArticle(article));
+        }
+        
+        // Update UI to show we're in sharing history mode
+        newsView.getPageTitle().setText("Sharing History");
         newsView.getCurrentPageLabel().setText("");
         newsView.getPreviousButton().setDisable(true);
         newsView.getNextButton().setDisable(true);
