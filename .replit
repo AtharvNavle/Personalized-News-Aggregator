@@ -17,14 +17,28 @@ args = "run_news_aggregator"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Headless News Aggregator"
+args = "Java News Aggregator"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Java News Aggregator"
+args = "Headless News Aggregator"
 
 [[workflows.workflow]]
 name = "run_news_aggregator"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "mvn clean javafx:run"
+
+[[workflows.workflow]]
+name = "Java News Aggregator"
 author = "agent"
 
 [workflows.workflow.metadata]
@@ -49,21 +63,7 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "mvn exec:java -Dexec.mainClass=\"com.newsaggregator.HeadlessMain\""
-
-[[workflows.workflow]]
-name = "Java News Aggregator"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "packager.installForAll"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "mvn clean javafx:run"
+args = "mvn compile exec:java -Dexec.mainClass=\"com.newsaggregator.HeadlessMain\""
 
 [deployment]
 run = ["sh", "-c", "mvn clean javafx:run"]
