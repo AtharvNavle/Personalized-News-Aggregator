@@ -1,0 +1,52 @@
+modules = ["java"]
+
+[nix]
+channel = "stable-24_05"
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Java News Aggregator"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "run_news_aggregator"
+
+[[workflows.workflow]]
+name = "Java News Aggregator"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "mvn clean javafx:run"
+waitForPort = 5000
+
+[[workflows.workflow]]
+name = "run_news_aggregator"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "mvn clean javafx:run"
+
+[deployment]
+run = ["sh", "-c", "mvn clean javafx:run"]

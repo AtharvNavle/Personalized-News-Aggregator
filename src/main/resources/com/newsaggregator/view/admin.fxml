@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ProgressIndicator?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<BorderPane fx:id="root" prefHeight="600.0" prefWidth="800.0" stylesheets="@../css/styles.css" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.newsaggregator.controller.AdminController">
+   <padding>
+      <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+   </padding>
+   <styleClass>
+      <String fx:value="admin-view" />
+   </styleClass>
+   <top>
+      <HBox alignment="CENTER_LEFT" spacing="10.0" BorderPane.alignment="CENTER">
+         <Button fx:id="backButton" styleClass="action-button" text="Back to News" />
+         <Label text="Admin Dashboard">
+            <font>
+               <Font name="System Bold" size="24.0" />
+            </font>
+            <padding>
+               <Insets bottom="20.0" />
+            </padding>
+         </Label>
+      </HBox>
+   </top>
+   <center>
+      <VBox spacing="10.0" BorderPane.alignment="CENTER">
+         <HBox alignment="CENTER_LEFT" spacing="10.0">
+            <Button fx:id="createUserButton" styleClass="action-button" text="Create User" />
+            <Button fx:id="editUserButton" styleClass="action-button" text="Edit User" />
+            <Button fx:id="deleteUserButton" styleClass="action-button,delete-button" text="Delete User" />
+            <Button fx:id="toggleAdminButton" styleClass="action-button" text="Toggle Admin" />
+            <Button fx:id="refreshButton" styleClass="action-button" text="Refresh" />
+            <ProgressIndicator fx:id="loadingIndicator" prefHeight="24.0" prefWidth="24.0" visible="false" />
+            <padding>
+               <Insets bottom="10.0" top="10.0" />
+            </padding>
+         </HBox>
+         <TableView fx:id="usersTable" prefHeight="500.0" prefWidth="760.0" VBox.vgrow="ALWAYS">
+            <columns>
+               <TableColumn fx:id="idColumn" maxWidth="50.0" text="ID" />
+               <TableColumn fx:id="usernameColumn" prefWidth="150.0" text="Username" />
+               <TableColumn fx:id="emailColumn" prefWidth="200.0" text="Email" />
+               <TableColumn fx:id="adminColumn" maxWidth="80.0" text="Admin" />
+            </columns>
+            <placeholder>
+               <Label text="No users found" />
+            </placeholder>
+         </TableView>
+      </VBox>
+   </center>
+</BorderPane>
