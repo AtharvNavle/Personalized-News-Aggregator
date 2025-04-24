@@ -18,10 +18,27 @@ import java.util.logging.Logger;
  */
 public class DatabaseService {
     private static final Logger LOGGER = Logger.getLogger(DatabaseService.class.getName());
-    // Using H2 in-memory database for easier setup
-    private static final String DB_URL = "jdbc:h2:mem:newsdb;DB_CLOSE_DELAY=-1";
-    private static final String DB_USER = "sa";
-    private static final String DB_PASSWORD = "";
+    
+    // Database configuration - MySQL settings
+    private static final String MYSQL_DRIVER = "com.mysql.cj.jdbc.Driver";
+    private static final String MYSQL_URL = "jdbc:mysql://localhost:3306/newsaggregator?serverTimezone=UTC&useSSL=false&allowPublicKeyRetrieval=true";
+    private static final String MYSQL_USER = "root";  // Update with your MySQL username
+    private static final String MYSQL_PASSWORD = "root";  // Update with your MySQL password
+    
+    // H2 settings (for development/testing)
+    private static final String H2_DRIVER = "org.h2.Driver";
+    private static final String H2_URL = "jdbc:h2:mem:newsdb;DB_CLOSE_DELAY=-1";
+    private static final String H2_USER = "sa";
+    private static final String H2_PASSWORD = "";
+    
+    // Set which database to use
+    private static final boolean USE_MYSQL = true;  // Set to false to use H2
+    
+    // Active configuration
+    private final String DB_DRIVER;
+    private final String DB_URL;
+    private final String DB_USER;
+    private final String DB_PASSWORD;
 
     private static DatabaseService instance;
     private Connection connection;
@@ -30,14 +47,27 @@ public class DatabaseService {
      * Private constructor to enforce singleton pattern.
      */
     private DatabaseService() {
+        // Configure appropriate database
+        if (USE_MYSQL) {
+            DB_DRIVER = MYSQL_DRIVER;
+            DB_URL = MYSQL_URL;
+            DB_USER = MYSQL_USER;
+            DB_PASSWORD = MYSQL_PASSWORD;
+        } else {
+            DB_DRIVER = H2_DRIVER;
+            DB_URL = H2_URL;
+            DB_USER = H2_USER;
+            DB_PASSWORD = H2_PASSWORD;
+        }
+        
         try {
-            // Load H2 JDBC driver
-            Class.forName("org.h2.Driver");
-            System.out.println("H2 Database driver loaded successfully");
+            // Load appropriate JDBC driver
+            Class.forName(DB_DRIVER);
+            System.out.println("Database driver loaded successfully: " + DB_DRIVER);
         } catch (ClassNotFoundException e) {
-            System.err.println("H2 Database driver not found: " + e.getMessage());
-            LOGGER.log(Level.SEVERE, "H2 Database driver not found", e);
-            throw new RuntimeException("H2 Database driver not found", e);
+            System.err.println("Database driver not found: " + e.getMessage());
+            LOGGER.log(Level.SEVERE, "Database driver not found", e);
+            throw new RuntimeException("Database driver not found", e);
         }
     }
 
@@ -97,56 +127,115 @@ public class DatabaseService {
      */
     private void createTablesIfNotExist() {
         try (Statement stmt = connection.createStatement()) {
-            // Users table
-            stmt.execute("CREATE TABLE IF NOT EXISTS users (" +
-                    "id INT AUTO_INCREMENT PRIMARY KEY, " +
-                    "username VARCHAR(50) NOT NULL UNIQUE, " +
-                    "email VARCHAR(100) NOT NULL UNIQUE, " +
-                    "password VARCHAR(255) NOT NULL, " +
-                    "is_admin BOOLEAN DEFAULT FALSE, " +
-                    "preferred_language VARCHAR(5) DEFAULT 'en', " +
-                    "preferred_country VARCHAR(5) DEFAULT 'us', " +
-                    "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
+            if (USE_MYSQL) {
+                // MySQL-specific table creation (handles TEXT, TINYINT for BOOLEAN, ENGINE settings)
+                
+                // Users table
+                stmt.execute("CREATE TABLE IF NOT EXISTS users (" +
+                        "id INT AUTO_INCREMENT PRIMARY KEY, " +
+                        "username VARCHAR(50) NOT NULL UNIQUE, " +
+                        "email VARCHAR(100) NOT NULL UNIQUE, " +
+                        "password VARCHAR(255) NOT NULL, " +
+                        "is_admin TINYINT(1) DEFAULT 0, " +  // MySQL uses TINYINT for BOOLEAN
+                        "preferred_language VARCHAR(5) DEFAULT 'en', " +
+                        "preferred_country VARCHAR(5) DEFAULT 'us', " +
+                        "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP" +
+                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");  // InnoDB supports transactions and foreign keys
 
-            // User preferences table
-            stmt.execute("CREATE TABLE IF NOT EXISTS user_preferences (" +
-                    "id INT AUTO_INCREMENT PRIMARY KEY, " +
-                    "user_id INT NOT NULL, " +
-                    "category VARCHAR(50) NOT NULL, " +
-                    "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE, " +
-                    "CONSTRAINT unique_user_category UNIQUE (user_id, category))");
+                // User preferences table
+                stmt.execute("CREATE TABLE IF NOT EXISTS user_preferences (" +
+                        "id INT AUTO_INCREMENT PRIMARY KEY, " +
+                        "user_id INT NOT NULL, " +
+                        "category VARCHAR(50) NOT NULL, " +
+                        "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE, " +
+                        "CONSTRAINT unique_user_category UNIQUE (user_id, category)" +
+                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-            // Saved articles table
-            stmt.execute("CREATE TABLE IF NOT EXISTS saved_articles (" +
-                    "id INT AUTO_INCREMENT PRIMARY KEY, " +
-                    "user_id INT NOT NULL, " +
-                    "article_id VARCHAR(255) NOT NULL, " +
-                    "title VARCHAR(255) NOT NULL, " +
-                    "description TEXT, " +
-                    "content TEXT, " +
-                    "author VARCHAR(100), " +
-                    "url VARCHAR(500), " +
-                    "image_url VARCHAR(500), " +
-                    "published_at TIMESTAMP, " +
-                    "source VARCHAR(100), " +
-                    "category VARCHAR(50), " +
-                    "saved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
-                    "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE, " +
-                    "CONSTRAINT unique_user_article UNIQUE (user_id, article_id))");
+                // Saved articles table
+                stmt.execute("CREATE TABLE IF NOT EXISTS saved_articles (" +
+                        "id INT AUTO_INCREMENT PRIMARY KEY, " +
+                        "user_id INT NOT NULL, " +
+                        "article_id VARCHAR(255) NOT NULL, " +
+                        "title VARCHAR(255) NOT NULL, " +
+                        "description TEXT, " +
+                        "content LONGTEXT, " +  // LONGTEXT for potentially large content
+                        "author VARCHAR(100), " +
+                        "url VARCHAR(500), " +
+                        "image_url VARCHAR(500), " +
+                        "published_at TIMESTAMP NULL, " +  // NULL allows for missing dates
+                        "source VARCHAR(100), " +
+                        "category VARCHAR(50), " +
+                        "saved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
+                        "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE, " +
+                        "CONSTRAINT unique_user_article UNIQUE (user_id, article_id)" +
+                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-            // User-created articles table
-            stmt.execute("CREATE TABLE IF NOT EXISTS user_created_articles (" +
-                    "id INT AUTO_INCREMENT PRIMARY KEY, " +
-                    "author_id INT NOT NULL, " +
-                    "title VARCHAR(255) NOT NULL, " +
-                    "description TEXT, " +
-                    "content TEXT NOT NULL, " +
-                    "image_url VARCHAR(500), " +
-                    "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
-                    "category VARCHAR(50) NOT NULL, " +
-                    "approved BOOLEAN DEFAULT FALSE, " +
-                    "FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE)");
+                // User-created articles table
+                stmt.execute("CREATE TABLE IF NOT EXISTS user_created_articles (" +
+                        "id INT AUTO_INCREMENT PRIMARY KEY, " +
+                        "author_id INT NOT NULL, " +
+                        "title VARCHAR(255) NOT NULL, " +
+                        "description TEXT, " +
+                        "content LONGTEXT NOT NULL, " +  // LONGTEXT for potentially large content
+                        "image_url VARCHAR(500), " +
+                        "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
+                        "category VARCHAR(50) NOT NULL, " +
+                        "approved TINYINT(1) DEFAULT 0, " +  // MySQL uses TINYINT for BOOLEAN
+                        "FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE" +
+                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+            } else {
+                // H2 table creation (original logic for H2 database)
+                
+                // Users table
+                stmt.execute("CREATE TABLE IF NOT EXISTS users (" +
+                        "id INT AUTO_INCREMENT PRIMARY KEY, " +
+                        "username VARCHAR(50) NOT NULL UNIQUE, " +
+                        "email VARCHAR(100) NOT NULL UNIQUE, " +
+                        "password VARCHAR(255) NOT NULL, " +
+                        "is_admin BOOLEAN DEFAULT FALSE, " +
+                        "preferred_language VARCHAR(5) DEFAULT 'en', " +
+                        "preferred_country VARCHAR(5) DEFAULT 'us', " +
+                        "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
 
+                // User preferences table
+                stmt.execute("CREATE TABLE IF NOT EXISTS user_preferences (" +
+                        "id INT AUTO_INCREMENT PRIMARY KEY, " +
+                        "user_id INT NOT NULL, " +
+                        "category VARCHAR(50) NOT NULL, " +
+                        "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE, " +
+                        "CONSTRAINT unique_user_category UNIQUE (user_id, category))");
+
+                // Saved articles table
+                stmt.execute("CREATE TABLE IF NOT EXISTS saved_articles (" +
+                        "id INT AUTO_INCREMENT PRIMARY KEY, " +
+                        "user_id INT NOT NULL, " +
+                        "article_id VARCHAR(255) NOT NULL, " +
+                        "title VARCHAR(255) NOT NULL, " +
+                        "description TEXT, " +
+                        "content TEXT, " +
+                        "author VARCHAR(100), " +
+                        "url VARCHAR(500), " +
+                        "image_url VARCHAR(500), " +
+                        "published_at TIMESTAMP, " +
+                        "source VARCHAR(100), " +
+                        "category VARCHAR(50), " +
+                        "saved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
+                        "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE, " +
+                        "CONSTRAINT unique_user_article UNIQUE (user_id, article_id))");
+
+                // User-created articles table
+                stmt.execute("CREATE TABLE IF NOT EXISTS user_created_articles (" +
+                        "id INT AUTO_INCREMENT PRIMARY KEY, " +
+                        "author_id INT NOT NULL, " +
+                        "title VARCHAR(255) NOT NULL, " +
+                        "description TEXT, " +
+                        "content TEXT NOT NULL, " +
+                        "image_url VARCHAR(500), " +
+                        "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
+                        "category VARCHAR(50) NOT NULL, " +
+                        "approved BOOLEAN DEFAULT FALSE, " +
+                        "FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE)");
+            }
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Failed to create tables", e);
             throw new RuntimeException("Failed to create tables", e);
@@ -158,12 +247,26 @@ public class DatabaseService {
      */
     private void createAdminUserIfNotExists() {
         try {
-            String query = "SELECT COUNT(*) FROM users WHERE is_admin = TRUE";
+            String query;
+            if (USE_MYSQL) {
+                // In MySQL TINYINT(1) is used as BOOLEAN, so we compare with 1
+                query = "SELECT COUNT(*) FROM users WHERE is_admin = 1";
+            } else {
+                // In H2, we can use TRUE directly
+                query = "SELECT COUNT(*) FROM users WHERE is_admin = TRUE";
+            }
+            
             try (PreparedStatement pstmt = connection.prepareStatement(query)) {
                 ResultSet rs = pstmt.executeQuery();
                 if (rs.next() && rs.getInt(1) == 0) {
                     // Create admin user if none exists
-                    String insertQuery = "INSERT INTO users (username, email, password, is_admin) VALUES (?, ?, ?, TRUE)";
+                    String insertQuery;
+                    if (USE_MYSQL) {
+                        insertQuery = "INSERT INTO users (username, email, password, is_admin) VALUES (?, ?, ?, 1)";
+                    } else {
+                        insertQuery = "INSERT INTO users (username, email, password, is_admin) VALUES (?, ?, ?, TRUE)";
+                    }
+                    
                     try (PreparedStatement insertStmt = connection.prepareStatement(insertQuery)) {
                         insertStmt.setString(1, "admin");
                         insertStmt.setString(2, "admin@newsaggregator.com");

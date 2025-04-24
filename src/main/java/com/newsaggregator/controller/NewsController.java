@@ -437,9 +437,9 @@ public class NewsController {
             dialog.setTitle("Share Article");
             dialog.setHeaderText("Share \"" + article.getTitle() + "\"");
             
-            // Create the sharing options
+            // Create the sharing options - keeping only Email and Copy Link
             ComboBox<String> sharingOptions = new ComboBox<>();
-            sharingOptions.getItems().addAll("Email", "Twitter", "Facebook", "LinkedIn", "Copy Link");
+            sharingOptions.getItems().addAll("Email", "Copy Link");
             sharingOptions.setValue("Email");
             
             // Additional fields based on the selection
@@ -506,10 +506,6 @@ public class NewsController {
                     recipientField.setPromptText("Enter recipient email");
                     recipientField.setVisible(true);
                     messageField.setVisible(true);
-                } else if ("Twitter".equals(selectedMethod) || "Facebook".equals(selectedMethod) || "LinkedIn".equals(selectedMethod)) {
-                    recipientField.setVisible(false);
-                    messageField.setPromptText("Add a message to your post (optional)");
-                    messageField.setVisible(true);
                 } else if ("Copy Link".equals(selectedMethod)) {
                     recipientField.setVisible(false);
                     messageField.setVisible(false);
@@ -569,11 +565,42 @@ public class NewsController {
                         showAlert(AlertType.INFORMATION, "Link Copied", 
                               "Article link has been copied to your clipboard");
                     } else if ("Email".equals(method)) {
-                        showAlert(AlertType.INFORMATION, "Email Sharing", 
-                              "Article would be shared via email. In a real app, this would open your email client.");
-                    } else {
-                        showAlert(AlertType.INFORMATION, "Article Shared", 
-                              "Article has been shared via " + method);
+                        // Get recipient and optional message for email
+                        String recipient = sharingMethod.contains(":") ? sharingMethod.split(":")[1] : "";
+                        String subject = "Check out this article: " + article.getTitle();
+                        String body = "I thought you might find this interesting:\n\n" + 
+                               article.getTitle() + "\n\n" + 
+                               article.getDescription() + "\n\n" +
+                               "Read more: " + article.getUrl();
+                        
+                        // Encode for proper URL
+                        try {
+                            subject = java.net.URLEncoder.encode(subject, "UTF-8");
+                            body = java.net.URLEncoder.encode(body, "UTF-8");
+                            
+                            // Create mailto URL
+                            String mailtoUrl = "mailto:" + recipient + "?subject=" + subject + "&body=" + body;
+                            
+                            // Open in default mail client
+                            if (java.awt.Desktop.isDesktopSupported()) {
+                                java.awt.Desktop desktop = java.awt.Desktop.getDesktop();
+                                if (desktop.isSupported(java.awt.Desktop.Action.MAIL)) {
+                                    desktop.mail(new java.net.URI(mailtoUrl));
+                                    showAlert(AlertType.INFORMATION, "Email Client Opened", 
+                                          "Your default email client has been opened with the article information.");
+                                } else {
+                                    showAlert(AlertType.WARNING, "Email Not Supported", 
+                                          "Your system doesn't support launching email applications directly.");
+                                }
+                            } else {
+                                showAlert(AlertType.WARNING, "Desktop Not Supported", 
+                                      "Your system doesn't support launching applications directly.");
+                            }
+                        } catch (Exception e) {
+                            LOGGER.log(Level.SEVERE, "Failed to open email client", e);
+                            showAlert(AlertType.ERROR, "Email Error", 
+                                  "Failed to open your email client: " + e.getMessage());
+                        }
                     }
                 } catch (Exception e) {
                     LOGGER.log(Level.SEVERE, "Failed to share article", e);
